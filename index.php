@@ -628,8 +628,8 @@ foreach ($categories as $cat) {
                 <a href="<?= $bookmark['link_type'] === 'url' ? htmlspecialchars($bookmark['target_url']) : url('/' . htmlspecialchars($bookmark['slug']) . '/') ?>"
                    class="tool-card"
                    data-category="<?= $bookmark['category_id'] ?>"
-                   target="<?= $bookmark['link_type'] === 'url' ? '_blank' : '_self' ?>"
-                   rel="<?= $bookmark['link_type'] === 'url' ? 'noopener noreferrer' : '' ?>">
+                   target="_blank"
+                   rel="noopener noreferrer">
                     <div class="tool-icon">
                         <?php if ($bookmark['icon_type'] === 'library'): ?>
                             <i data-lucide="<?= str_replace('lucide:', '', $bookmark['icon_value']) ?>"></i>

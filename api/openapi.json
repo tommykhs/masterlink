@@ -3,7 +3,7 @@
   "info": {
     "title": "MasterLink API",
     "description": "REST API for MasterLink - a lightweight, self-hosted link management system. Manage bookmarks, categories, contacts, and media files.",
-    "version": "1.2.0",
+    "version": "1.2.1",
     "contact": {
       "name": "MasterLink",
       "url": "https://github.com/mcailab/masterlink/"
