@@ -159,7 +159,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Recursive function to build folder tree
-function buildFolderTree($dir, $basePath = '', $excludeFolders = ['images']) {
+function buildFolderTree($dir, $basePath = '', $excludeFolders = []) {
     $tree = [];
     $entries = scandir($dir);
     foreach ($entries as $entry) {
@@ -203,7 +203,7 @@ flattenFolderTree($folderTree, $folders);
 
 // Count files at root level
 $rootFileCount = count(array_filter(scandir($uploadsDir), function($f) use ($uploadsDir) {
-    return $f !== '.' && $f !== '..' && $f !== 'images' && is_file($uploadsDir . '/' . $f);
+    return $f !== '.' && $f !== '..' && is_file($uploadsDir . '/' . $f);
 }));
 
 // Get files AND folders in current folder
@@ -213,8 +213,6 @@ if (is_dir($fullPath)) {
     $entries = scandir($fullPath);
     foreach ($entries as $entry) {
         if ($entry === '.' || $entry === '..') continue;
-        // Skip images folder at root level (it's for icons only)
-        if ($currentFolder === '' && $entry === 'images') continue;
         $itemPath = $fullPath . '/' . $entry;
         if (is_dir($itemPath)) {
             $subfolders[] = [

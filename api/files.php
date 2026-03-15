@@ -97,7 +97,7 @@ if (isset($_GET['folders'])) {
     $folders = [];
     $entries = scandir($uploadsDir);
     foreach ($entries as $entry) {
-        if ($entry === '.' || $entry === '..' || $entry === 'images') continue;
+        if ($entry === '.' || $entry === '..') continue;
         if (is_dir($uploadsDir . '/' . $entry)) {
             $folders[] = $entry;
         }
@@ -123,8 +123,6 @@ $entries = scandir($fullPath);
 
 foreach ($entries as $entry) {
     if ($entry === '.' || $entry === '..') continue;
-    // Skip images folder at root
-    if ($path === '' && $entry === 'images') continue;
 
     $itemPath = $fullPath . '/' . $entry;
     $relativePath = $path ? $path . '/' . $entry : $entry;
