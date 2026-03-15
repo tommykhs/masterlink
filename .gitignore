@@ -26,6 +26,5 @@ Thumbs.db
 
 # Secrets & local tools
 admin/includes/config.php
-api/sql.php
 tools/
 DEPLOY-INFINITYFREE.md
