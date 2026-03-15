@@ -30,9 +30,3 @@ jobs:
             docs/**
             database/**
 
-      - name: Run migrations
-        continue-on-error: true
-        run: |
-          sleep 5
-          response=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "http://ts.page.gd/migrate.php?key=mk_ad3f313587bcb7a98503b1e4eaea4c5e")
-          echo "Migration response: $response"

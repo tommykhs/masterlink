@@ -23,4 +23,8 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Secrets & local tools
 admin/includes/config.php
+tools/
+DEPLOY-INFINITYFREE.md
