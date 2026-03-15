@@ -43,14 +43,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $targetDir = $uploadsDir . ($folder ? '/' . $folder : '');
 
-        // Validate target is within uploads
-        if ($folder && (!is_dir($targetDir) || strpos(realpath($targetDir), $uploadsDir) !== 0)) {
-            filesApiResponse(['success' => false, 'error' => 'Invalid folder']);
-        }
-
         // Create folder if doesn't exist
         if ($folder && !is_dir($targetDir)) {
             mkdir($targetDir, 0755, true);
+        }
+
+        // Validate target is within uploads
+        if ($folder && (!is_dir($targetDir) || strpos(realpath($targetDir), $uploadsDir) !== 0)) {
+            filesApiResponse(['success' => false, 'error' => 'Invalid folder']);
         }
 
         $uploadedFiles = [];
