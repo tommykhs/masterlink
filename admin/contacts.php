@@ -290,7 +290,7 @@ $sortMode = isset($_GET['sort']);
                                         <div style="display: flex; align-items: center; gap: 0.75rem;">
                                             <div class="contact-icon" id="iconPreview_<?= $contact['id'] ?>" onclick="openQuickIconPicker(<?= $contact['id'] ?>, this)" title="Click to change icon">
                                                 <?php if ($contact['icon_type'] === 'library'): ?>
-                                                    <i data-lucide="<?= htmlspecialchars($contact['icon_value']) ?>"></i>
+                                                    <i data-lucide="<?= str_replace('lucide:', '', htmlspecialchars($contact['icon_value'])) ?>"></i>
                                                 <?php else: ?>
                                                     <img src="<?= htmlspecialchars($contact['icon_value']) ?>" alt="">
                                                 <?php endif; ?>

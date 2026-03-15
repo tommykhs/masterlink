@@ -375,7 +375,7 @@ $shortenerCount = $pdo->query("SELECT COUNT(*) FROM bookmarks WHERE link_type IN
                         <?php else: ?>
                             <div class="item-grid">
                                 <?php foreach ($contacts as $contact):
-                                    $iconName = $contact['icon_value'] ?? 'globe';
+                                    $iconName = str_replace('lucide:', '', $contact['icon_value'] ?? 'globe');
                                     if (empty($iconName)) $iconName = 'globe';
                                 ?>
                                 <a href="contacts.php?edit=<?= $contact['id'] ?>" class="grid-item" title="<?= htmlspecialchars($contact['name']) ?>">
