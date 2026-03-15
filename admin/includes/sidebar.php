@@ -47,9 +47,9 @@ include __DIR__ . '/shared-header.php';
     </nav>
 
     <div class="sidebar-footer">
-        <a href="<?= url('/admin/db-console.php') ?>" class="nav-item <?= $currentPage === 'db-console.php' ? 'active' : '' ?>">
+        <a href="<?= url('/admin/database.php') ?>" class="nav-item <?= $currentPage === 'database.php' ? 'active' : '' ?>">
             <i data-lucide="database"></i>
-            <span>DB Console</span>
+            <span>Database</span>
         </a>
         <a href="<?= url('/api/') ?>" class="nav-item" target="_blank">
             <i data-lucide="code"></i>
