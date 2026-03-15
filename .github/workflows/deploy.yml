@@ -19,7 +19,7 @@ jobs:
           server: gsgp1014.siteground.asia
           username: go@mcai.dev
           password: ${{ secrets.FTP_PASSWORD }}
-          server-dir: /
+          server-dir: /go.mcai.dev/public_html/
           exclude: |
             **/.git*
             **/.git*/**
