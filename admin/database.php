@@ -465,25 +465,23 @@ document.getElementById('query').addEventListener('keydown', function(e) {
 <!-- ══════════════════════════ TABLES LIST VIEW ══════════════════════════ -->
 <?php $ver = $pdo->query("SELECT VERSION()")->fetchColumn(); ?>
 <div class="card" style="margin-bottom:1rem;padding:0.75rem 1rem;">
-    <div style="display:flex;align-items:center;justify-content:space-between;font-size:0.85rem;cursor:pointer;" onclick="document.getElementById('db-info-details').classList.toggle('hidden');this.querySelector('.expand-arrow').classList.toggle('rotated');">
-        <div style="display:flex;gap:1.5rem;flex-wrap:wrap;">
-            <span><span style="color:var(--text-muted);">Database:</span> <strong><?= htmlspecialchars(DB_NAME) ?></strong></span>
-            <span><span style="color:var(--text-muted);">Tables:</span> <strong><?= count($validTables) ?></strong></span>
-            <span><span style="color:var(--text-muted);">MySQL:</span> <strong><?= htmlspecialchars($ver) ?></strong></span>
-        </div>
-        <span class="expand-arrow" style="transition:transform 0.2s;display:inline-block;color:var(--text-muted);">&#9660;</span>
+    <div style="display:flex;align-items:center;justify-content:space-between;font-size:0.85rem;cursor:pointer;gap:0.75rem;" onclick="var d=document.getElementById('db-info-details');d.style.display=d.style.display==='none'?'table':'none';this.querySelector('.expand-arrow').classList.toggle('rotated');">
+        <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;">
+            <strong><?= htmlspecialchars(DB_NAME) ?></strong>
+            <span style="color:var(--text-muted);margin:0 0.5rem;">·</span>
+            <span style="color:var(--text-muted);"><?= count($validTables) ?> tables</span>
+            <span style="color:var(--text-muted);margin:0 0.5rem;">·</span>
+            <span style="color:var(--text-muted);"><?= htmlspecialchars($ver) ?></span>
+        </span>
+        <span class="expand-arrow" style="transition:transform 0.2s;display:inline-block;color:var(--text-muted);flex-shrink:0;">&#9660;</span>
     </div>
-    <div id="db-info-details" class="hidden" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0.5rem;font-size:0.85rem;margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--border-color);">
-        <div><span style="color:var(--text-muted);">Host:</span> <strong><?= htmlspecialchars(DB_HOST) ?></strong></div>
-        <div><span style="color:var(--text-muted);">Database:</span> <strong><?= htmlspecialchars(DB_NAME) ?></strong></div>
-        <div><span style="color:var(--text-muted);">User:</span> <strong><?= htmlspecialchars(DB_USER) ?></strong></div>
-        <div><span style="color:var(--text-muted);">PHP:</span> <strong><?= phpversion() ?></strong></div>
-        <div><span style="color:var(--text-muted);">Tables:</span> <strong><?= count($validTables) ?></strong></div>
-        <div><span style="color:var(--text-muted);">MySQL:</span> <strong><?= htmlspecialchars($ver) ?></strong></div>
-    </div>
+    <table id="db-info-details" style="display:none;font-size:0.85rem;margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--border-color);border-collapse:collapse;width:100%;">
+        <tr><td style="color:var(--text-muted);padding:0.2rem 1rem 0.2rem 0;white-space:nowrap;">Host</td><td style="padding:0.2rem 0;"><strong><?= htmlspecialchars(DB_HOST) ?></strong></td></tr>
+        <tr><td style="color:var(--text-muted);padding:0.2rem 1rem 0.2rem 0;white-space:nowrap;">User</td><td style="padding:0.2rem 0;"><strong><?= htmlspecialchars(DB_USER) ?></strong></td></tr>
+        <tr><td style="color:var(--text-muted);padding:0.2rem 1rem 0.2rem 0;white-space:nowrap;">PHP</td><td style="padding:0.2rem 0;"><strong><?= phpversion() ?></strong></td></tr>
+    </table>
 </div>
 <style>
-    .hidden { display: none !important; }
     .expand-arrow.rotated { transform: rotate(180deg); }
 </style>
 <div class="card">
