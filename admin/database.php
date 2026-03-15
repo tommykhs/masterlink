@@ -230,6 +230,7 @@ if ($viewSql && $_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['query'])
         </div>
         <div style="margin-top:0.75rem;">
             <button type="submit" class="btn btn-primary">Run Query</button>
+            <button type="button" class="btn btn-secondary" style="margin-left:0.5rem;" onclick="document.getElementById('query').value='';document.getElementById('query').focus();">Clear</button>
             <span style="margin-left:1rem;color:var(--text-muted);font-size:0.85rem;">Ctrl+Enter to submit</span>
         </div>
     </form>
