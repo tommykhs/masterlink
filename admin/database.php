@@ -463,6 +463,17 @@ document.getElementById('query').addEventListener('keydown', function(e) {
 
 <?php else: ?>
 <!-- ══════════════════════════ TABLES LIST VIEW ══════════════════════════ -->
+<div class="card" style="margin-bottom:1rem;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0.75rem;font-size:0.85rem;">
+        <div><span style="color:var(--text-muted);">Host:</span> <strong><?= htmlspecialchars(DB_HOST) ?></strong></div>
+        <div><span style="color:var(--text-muted);">Database:</span> <strong><?= htmlspecialchars(DB_NAME) ?></strong></div>
+        <div><span style="color:var(--text-muted);">User:</span> <strong><?= htmlspecialchars(DB_USER) ?></strong></div>
+        <div><span style="color:var(--text-muted);">PHP:</span> <strong><?= phpversion() ?></strong></div>
+        <div><span style="color:var(--text-muted);">Tables:</span> <strong><?= count($validTables) ?></strong></div>
+        <?php $ver = $pdo->query("SELECT VERSION()")->fetchColumn(); ?>
+        <div><span style="color:var(--text-muted);">MySQL:</span> <strong><?= htmlspecialchars($ver) ?></strong></div>
+    </div>
+</div>
 <div class="card">
     <h2 style="margin-bottom:1rem;">Tables</h2>
     <div class="table-responsive">
