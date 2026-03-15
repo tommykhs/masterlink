@@ -59,18 +59,15 @@ try {
             }
         );
 
-        $pdo->beginTransaction();
         try {
             foreach ($statements as $stmt) {
                 $pdo->exec($stmt);
             }
 
             $pdo->prepare("INSERT INTO _migrations (filename) VALUES (?)")->execute([$filename]);
-            $pdo->commit();
 
             $results[] = ['file' => $filename, 'status' => 'OK'];
         } catch (PDOException $e) {
-            $pdo->rollBack();
             $results[] = ['file' => $filename, 'status' => 'FAILED: ' . $e->getMessage()];
         }
     }
