@@ -237,7 +237,7 @@ function getBookmarks(bool $visibleOnly = false, ?int $categoryId = null): array
 
     if ($visibleOnly) {
         $conditions[] = "t.is_visible = 1";
-        $conditions[] = "c.is_visible = 1"; // Also check category visibility (links must have visible category)
+        $conditions[] = "(c.is_visible = 1 OR t.category_id IS NULL)"; // Show uncategorized bookmarks too
     }
     if ($categoryId !== null) {
         $conditions[] = "t.category_id = ?";
