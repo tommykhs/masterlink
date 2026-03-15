@@ -189,6 +189,7 @@ if ($viewSql && $_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['query'])
         .table th { white-space: nowrap; }
         .row-count { color: var(--text-muted); font-size: 0.8125rem; }
         .table-responsive { overflow-x: auto; }
+        .expand-arrow.rotated { transform: rotate(180deg); }
     </style>
 </head>
 <body>
@@ -222,6 +223,24 @@ if ($viewSql && $_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['query'])
 
 <?php if ($viewSql): ?>
 <!-- ══════════════════════════ SQL VIEW ══════════════════════════ -->
+<?php $ver = $pdo->query("SELECT VERSION()")->fetchColumn(); ?>
+<div class="card" style="margin-bottom:1rem;padding:0.75rem 1rem;">
+    <div style="display:flex;align-items:center;justify-content:space-between;font-size:0.85rem;cursor:pointer;gap:0.75rem;" onclick="var d=document.getElementById('db-info-details');d.style.display=d.style.display==='none'?'table':'none';this.querySelector('.expand-arrow').classList.toggle('rotated');">
+        <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;">
+            <strong><?= count($validTables) ?> tables</strong>
+            <span style="color:var(--text-muted);margin:0 0.5rem;">·</span>
+            <span style="color:var(--text-muted);">MariaDB <?= htmlspecialchars(explode('-', $ver)[0]) ?></span>
+            <span style="color:var(--text-muted);margin:0 0.5rem;">·</span>
+            <span style="color:var(--text-muted);">PHP <?= phpversion() ?></span>
+        </span>
+        <span class="expand-arrow" style="transition:transform 0.2s;display:inline-block;color:var(--text-muted);flex-shrink:0;">&#9660;</span>
+    </div>
+    <table id="db-info-details" style="display:none;font-size:0.85rem;margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--border-color);border-collapse:collapse;width:100%;">
+        <tr><td style="color:var(--text-muted);padding:0.2rem 1rem 0.2rem 0;white-space:nowrap;">Host</td><td style="padding:0.2rem 0;"><strong><?= htmlspecialchars(DB_HOST) ?></strong></td></tr>
+        <tr><td style="color:var(--text-muted);padding:0.2rem 1rem 0.2rem 0;white-space:nowrap;">Database</td><td style="padding:0.2rem 0;"><strong><?= htmlspecialchars(DB_NAME) ?></strong></td></tr>
+        <tr><td style="color:var(--text-muted);padding:0.2rem 1rem 0.2rem 0;white-space:nowrap;">User</td><td style="padding:0.2rem 0;"><strong><?= htmlspecialchars(DB_USER) ?></strong></td></tr>
+    </table>
+</div>
 <div class="card">
     <form method="POST">
         <div class="form-group">
@@ -464,27 +483,6 @@ document.getElementById('query').addEventListener('keydown', function(e) {
 
 <?php else: ?>
 <!-- ══════════════════════════ TABLES LIST VIEW ══════════════════════════ -->
-<?php $ver = $pdo->query("SELECT VERSION()")->fetchColumn(); ?>
-<div class="card" style="margin-bottom:1rem;padding:0.75rem 1rem;">
-    <div style="display:flex;align-items:center;justify-content:space-between;font-size:0.85rem;cursor:pointer;gap:0.75rem;" onclick="var d=document.getElementById('db-info-details');d.style.display=d.style.display==='none'?'table':'none';this.querySelector('.expand-arrow').classList.toggle('rotated');">
-        <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;">
-            <strong><?= count($validTables) ?> tables</strong>
-            <span style="color:var(--text-muted);margin:0 0.5rem;">·</span>
-            <span style="color:var(--text-muted);">MariaDB <?= htmlspecialchars(explode('-', $ver)[0]) ?></span>
-            <span style="color:var(--text-muted);margin:0 0.5rem;">·</span>
-            <span style="color:var(--text-muted);">PHP <?= phpversion() ?></span>
-        </span>
-        <span class="expand-arrow" style="transition:transform 0.2s;display:inline-block;color:var(--text-muted);flex-shrink:0;">&#9660;</span>
-    </div>
-    <table id="db-info-details" style="display:none;font-size:0.85rem;margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--border-color);border-collapse:collapse;width:100%;">
-        <tr><td style="color:var(--text-muted);padding:0.2rem 1rem 0.2rem 0;white-space:nowrap;">Host</td><td style="padding:0.2rem 0;"><strong><?= htmlspecialchars(DB_HOST) ?></strong></td></tr>
-        <tr><td style="color:var(--text-muted);padding:0.2rem 1rem 0.2rem 0;white-space:nowrap;">Database</td><td style="padding:0.2rem 0;"><strong><?= htmlspecialchars(DB_NAME) ?></strong></td></tr>
-        <tr><td style="color:var(--text-muted);padding:0.2rem 1rem 0.2rem 0;white-space:nowrap;">User</td><td style="padding:0.2rem 0;"><strong><?= htmlspecialchars(DB_USER) ?></strong></td></tr>
-    </table>
-</div>
-<style>
-    .expand-arrow.rotated { transform: rotate(180deg); }
-</style>
 <div class="card">
     <h2 style="margin-bottom:1rem;">Tables</h2>
     <div class="table-responsive">
