@@ -50,13 +50,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'generate_api_key') {
         $name = trim($_POST['key_name']);
-        $key = bin2hex(random_bytes(32));
+        $key = 'ml-' . bin2hex(random_bytes(16));
         $hash = hash('sha256', $key);
 
         $stmt = $pdo->prepare("INSERT INTO api_keys (key_hash, name, permissions) VALUES (?, ?, ?)");
         $stmt->execute([$hash, $name, json_encode(['read', 'write'])]);
 
-        $message = "API Key generated: <code>{$key}</code><br><small>Copy this key now - it won't be shown again!</small>";
+        $newApiKey = $key;
+        $message = "API Key generated! Copy it now - it won't be shown again.";
     }
 
     if ($action === 'delete_api_key') {
@@ -143,6 +144,14 @@ $currentLogo = $settings['site_logo'] ?? $defaults['site_logo'];
 
             <?php if ($message): ?>
                 <div class="alert alert-success"><?= $message ?></div>
+            <?php endif; ?>
+            <?php if (!empty($newApiKey)): ?>
+                <div class="card" style="margin-bottom:1rem;border-color:var(--primary);">
+                    <div style="display:flex;align-items:center;gap:0.75rem;">
+                        <code id="apiKeyValue" style="flex:1;padding:0.5rem 0.75rem;background:var(--bg-main);border-radius:4px;font-size:0.9rem;word-break:break-all;"><?= htmlspecialchars($newApiKey) ?></code>
+                        <button onclick="navigator.clipboard.writeText(document.getElementById('apiKeyValue').textContent).then(()=>{this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',2000)})" class="btn btn-primary" style="white-space:nowrap;">Copy</button>
+                    </div>
+                </div>
             <?php endif; ?>
             <?php if ($error): ?>
                 <div class="alert alert-error"><?= htmlspecialchars($error) ?></div>
