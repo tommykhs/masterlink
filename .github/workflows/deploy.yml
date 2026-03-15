@@ -24,8 +24,6 @@ jobs:
             **/.git*
             **/.git*/**
             .github/**
-            DEPLOY-INFINITYFREE.md
-            DEVELOPMENT.md
             README.md
             docs/**
             database/**

@@ -2,7 +2,7 @@
 
 A lightweight, self-hosted link management system. Like Linktree + Bitly + QR Generator in one.
 
-**Version 1.2.1**
+**Version 1.2.2**
 
 ## Features
 
@@ -11,19 +11,16 @@ A lightweight, self-hosted link management system. Like Linktree + Bitly + QR Ge
   - **URL** - Display on homepage, opens in new tab
   - **Redirect** - 301 redirect to destination
   - **Embed** - Show destination in iframe (great for Google Forms)
+  - **File** - Serve uploaded files with optional password protection
 - **Categories** - Organize links with custom icons and direct filter URLs (`/?cat=slug`)
 - **Contacts** - Social/contact links displayed in footer
 - **QR Code Generator** - One-click QR for any link
 - **Visibility Control** - Toggle what appears publicly
 - **Theme System** - Light, Dark, Auto, or custom brand theme
-- **REST API** - Full CRUD with OpenAPI documentation (Bookmarks, Categories, Contacts, Media)
+- **File Manager** - Upload and manage images and documents
+- **Database Manager** - Browse tables, run SQL, edit rows from admin
+- **REST API** - Full CRUD with OpenAPI documentation
 - **MCP Server** - Claude AI integration for link management
-
-## Screenshots
-
-| Homepage | Admin Panel |
-|----------|-------------|
-| Bookmark grid with categories | Full link management |
 
 ## Requirements
 
@@ -87,11 +84,11 @@ location / {
 }
 ```
 
-### 6. Set admin password
+### 6. Log in
 
-Visit `/admin/` and log in with the default password. Go to Settings to change it.
+Visit `/admin/` and log in with the default password: `admin`
 
-**Default password**: `admin123` (change immediately!)
+Change it immediately in Settings.
 
 ## Usage
 
@@ -102,6 +99,7 @@ Visit `/admin/` and log in with the default password. Go to Settings to change i
 | URL | Shown on homepage, opens in new tab | Regular bookmarks |
 | Redirect | 301 redirect to target | Short URLs, tracking |
 | Embed | Shows target in iframe | Google Forms, external tools |
+| File | Serves uploaded file, optional password | Documents, downloads |
 
 ### API
 
@@ -109,10 +107,19 @@ API documentation available at `/api/` (Swagger UI).
 
 Generate API keys in Settings > API Keys.
 
-Example:
 ```bash
 curl -H "X-API-Key: your-key" https://yourdomain.com/api/bookmarks.php
 ```
+
+**Endpoints:**
+
+| Endpoint | Methods |
+|----------|---------|
+| `/api/bookmarks.php` | GET, POST, PUT, DELETE |
+| `/api/categories.php` | GET, POST, PUT, DELETE |
+| `/api/contacts.php` | GET, POST, PUT, DELETE |
+| `/api/media.php` | GET, POST, DELETE |
+| `/api/files.php` | GET, POST, DELETE |
 
 ### MCP Server
 
@@ -137,19 +144,25 @@ For Claude AI integration, configure MCP in your Claude settings:
 ```
 masterlink/
 ├── admin/              # Admin panel
-│   ├── includes/       # PHP includes (config, auth, functions)
+│   ├── includes/       # Config, auth, functions
 │   ├── bookmarks.php   # Link management
 │   ├── categories.php  # Category management
-│   ├── settings.php    # Site settings
-│   └── ...
+│   ├── contacts.php    # Contact links
+│   ├── shortener.php   # URL shortener
+│   ├── files.php       # File manager
+│   ├── database.php    # Database manager
+│   ├── settings.php    # Site settings & API keys
+│   └── qr.php          # QR code generator
 ├── api/                # REST API endpoints
-├── assets/             # CSS, JS, images
+├── assets/css/         # Stylesheets
 ├── database/           # SQL schema
+├── includes/           # Parsedown library
 ├── mcp/                # MCP server for AI
-├── templates/          # Embed template
+├── templates/          # Page, embed, password-gate, 404
 ├── uploads/            # User uploads (gitignored)
 ├── index.php           # Public homepage
-└── router.php          # URL routing
+├── router.php          # URL routing
+└── file-serve.php      # File serving with auth
 ```
 
 ## Configuration
