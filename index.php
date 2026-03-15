@@ -658,7 +658,7 @@ foreach ($categories as $cat) {
                rel="noopener noreferrer"
                title="<?= htmlspecialchars($contact['name']) ?>">
                 <?php if ($contact['icon_type'] === 'library'): ?>
-                    <i data-lucide="<?= htmlspecialchars($contact['icon_value']) ?>"></i>
+                    <i data-lucide="<?= str_replace('lucide:', '', htmlspecialchars($contact['icon_value'])) ?>"></i>
                 <?php else: ?>
                     <img src="<?= htmlspecialchars($contact['icon_value']) ?>" alt="">
                 <?php endif; ?>

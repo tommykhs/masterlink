@@ -30,9 +30,6 @@ CREATE TABLE `categories` (
   UNIQUE KEY `slug` (`slug`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Default categories
-INSERT INTO `categories` (`name`, `slug`, `icon_type`, `icon_value`, `sort_order`, `is_visible`) VALUES
-('Shortener', 'shortener', 'library', 'lucide:link', 0, 1);
 
 -- Bookmarks/Links
 CREATE TABLE `bookmarks` (
