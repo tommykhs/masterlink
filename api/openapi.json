@@ -1,0 +1,754 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "MasterLink API",
+    "description": "REST API for MasterLink - a lightweight, self-hosted link management system. Manage bookmarks, categories, contacts, and media files.",
+    "version": "1.2.0",
+    "contact": {
+      "name": "MasterLink",
+      "url": "https://github.com/mcailab/masterlink/"
+    }
+  },
+  "servers": [
+    {
+      "url": "/api",
+      "description": "Current server"
+    }
+  ],
+  "security": [
+    {
+      "ApiKeyAuth": []
+    }
+  ],
+  "paths": {
+    "/bookmarks.php": {
+      "get": {
+        "summary": "List all bookmarks",
+        "description": "Get a list of all bookmarks, optionally filtered by category, visibility, or link type",
+        "tags": ["Bookmarks"],
+        "security": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "description": "Get a single bookmark by ID",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "category_id",
+            "in": "query",
+            "description": "Filter by category ID",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "visible",
+            "in": "query",
+            "description": "Filter by visibility (1 = visible only)",
+            "schema": { "type": "string", "enum": ["1"] }
+          },
+          {
+            "name": "link_type",
+            "in": "query",
+            "description": "Filter by link type(s). Comma-separated for multiple (e.g., 'redirect,embed')",
+            "schema": { "type": "string", "example": "redirect,embed" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of bookmarks or single bookmark",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "bookmarks": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Bookmark" }
+                    },
+                    "count": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new bookmark",
+        "description": "Create a new bookmark/link",
+        "tags": ["Bookmarks"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/BookmarkCreate" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Bookmark created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "id": { "type": "integer" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "put": {
+        "summary": "Update a bookmark",
+        "description": "Update an existing bookmark by ID",
+        "tags": ["Bookmarks"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Bookmark ID",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/BookmarkUpdate" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bookmark updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "delete": {
+        "summary": "Delete a bookmark",
+        "description": "Delete a bookmark by ID",
+        "tags": ["Bookmarks"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Bookmark ID",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bookmark deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/categories.php": {
+      "get": {
+        "summary": "List all categories",
+        "description": "Get a list of all categories, optionally filtered by visibility",
+        "tags": ["Categories"],
+        "security": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "description": "Get a single category by ID",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "visible",
+            "in": "query",
+            "description": "Filter by visibility (1 = visible only)",
+            "schema": { "type": "string", "enum": ["1"] }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of categories or single category",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "categories": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Category" }
+                    },
+                    "count": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new category",
+        "description": "Create a new category",
+        "tags": ["Categories"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CategoryCreate" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Category created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "id": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "put": {
+        "summary": "Update a category",
+        "description": "Update an existing category by ID",
+        "tags": ["Categories"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Category ID",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CategoryUpdate" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Category updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "delete": {
+        "summary": "Delete a category",
+        "description": "Delete a category by ID. Cannot delete if category has bookmarks.",
+        "tags": ["Categories"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Category ID",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Category deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Cannot delete - category has bookmarks",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/contacts.php": {
+      "get": {
+        "summary": "List all contacts",
+        "description": "Get a list of all contact/social links",
+        "tags": ["Contacts"],
+        "security": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "description": "Get a single contact by ID",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of contacts or single contact",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "contacts": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Contact" }
+                    },
+                    "count": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new contact",
+        "description": "Create a new contact/social link",
+        "tags": ["Contacts"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ContactCreate" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Contact created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "id": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "put": {
+        "summary": "Update a contact",
+        "description": "Update an existing contact by ID",
+        "tags": ["Contacts"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Contact ID",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ContactUpdate" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Contact updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "delete": {
+        "summary": "Delete a contact",
+        "description": "Delete a contact by ID",
+        "tags": ["Contacts"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Contact ID",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Contact deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/media.php": {
+      "get": {
+        "summary": "List all media",
+        "description": "Get a list of uploaded media files",
+        "tags": ["Media"],
+        "security": [],
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "description": "Filter by type",
+            "schema": { "type": "string", "enum": ["image", "document", "all"] }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of media files",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "media": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Media" }
+                    },
+                    "count": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Upload media",
+        "description": "Upload an image or document (supports base64 JSON or multipart form)",
+        "tags": ["Media"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["filename", "data"],
+                "properties": {
+                  "filename": { "type": "string", "description": "Original filename" },
+                  "data": { "type": "string", "description": "Base64 encoded file data" }
+                }
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": { "type": "string", "format": "binary" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Media uploaded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "id": { "type": "integer" },
+                    "url": { "type": "string" },
+                    "path": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "delete": {
+        "summary": "Delete media",
+        "description": "Delete a media file by ID",
+        "tags": ["Media"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Media ID",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Media deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "API key for authentication. Required for POST, PUT, DELETE operations."
+      }
+    },
+    "schemas": {
+      "Bookmark": {
+        "type": "object",
+        "description": "A bookmark/link entry",
+        "properties": {
+          "id": { "type": "integer" },
+          "category_id": { "type": "integer", "nullable": true },
+          "name": { "type": "string" },
+          "slug": { "type": "string" },
+          "description": { "type": "string", "nullable": true },
+          "link_type": {
+            "type": "string",
+            "enum": ["url", "redirect", "embed"],
+            "description": "url=opens in new tab, redirect=301 redirect via slug, embed=iframe via slug"
+          },
+          "target_url": { "type": "string" },
+          "icon_type": { "type": "string", "enum": ["library", "upload", "external"] },
+          "icon_value": { "type": "string" },
+          "is_visible": { "type": "boolean" },
+          "is_featured": { "type": "boolean" },
+          "sort_order": { "type": "integer" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" },
+          "category_name": { "type": "string", "nullable": true },
+          "category_slug": { "type": "string", "nullable": true }
+        }
+      },
+      "BookmarkCreate": {
+        "type": "object",
+        "required": ["name", "target_url"],
+        "properties": {
+          "name": { "type": "string", "description": "Bookmark name" },
+          "slug": { "type": "string", "description": "URL slug (auto-generated from name if not provided)" },
+          "description": { "type": "string", "description": "Short description" },
+          "target_url": { "type": "string", "description": "Target URL" },
+          "category_id": { "type": "integer", "description": "Category ID" },
+          "link_type": {
+            "type": "string",
+            "enum": ["url", "redirect", "embed"],
+            "default": "url"
+          },
+          "icon_type": { "type": "string", "enum": ["library", "upload", "external"], "default": "library" },
+          "icon_value": { "type": "string", "description": "Icon name (lucide:xxx) or image URL", "default": "lucide:link" },
+          "is_visible": { "type": "boolean", "default": true },
+          "is_featured": { "type": "boolean", "default": false },
+          "sort_order": { "type": "integer", "default": 0 }
+        }
+      },
+      "BookmarkUpdate": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "slug": { "type": "string" },
+          "description": { "type": "string" },
+          "target_url": { "type": "string" },
+          "category_id": { "type": "integer" },
+          "link_type": { "type": "string", "enum": ["url", "redirect", "embed"] },
+          "icon_type": { "type": "string", "enum": ["library", "upload", "external"] },
+          "icon_value": { "type": "string" },
+          "is_visible": { "type": "boolean" },
+          "is_featured": { "type": "boolean" },
+          "sort_order": { "type": "integer" }
+        }
+      },
+      "Category": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "slug": { "type": "string" },
+          "icon_type": { "type": "string", "enum": ["library", "upload", "external"] },
+          "icon_value": { "type": "string" },
+          "sort_order": { "type": "integer" },
+          "is_visible": { "type": "boolean" },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "CategoryCreate": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string", "description": "Category name" },
+          "slug": { "type": "string", "description": "URL slug (auto-generated from name if not provided)" },
+          "icon_type": { "type": "string", "enum": ["library", "upload", "external"], "default": "library" },
+          "icon_value": { "type": "string", "description": "Icon name (lucide:xxx) or image URL", "default": "lucide:folder" },
+          "sort_order": { "type": "integer", "default": 0 },
+          "is_visible": { "type": "boolean", "default": true }
+        }
+      },
+      "CategoryUpdate": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "slug": { "type": "string" },
+          "icon_type": { "type": "string", "enum": ["library", "upload", "external"] },
+          "icon_value": { "type": "string" },
+          "sort_order": { "type": "integer" },
+          "is_visible": { "type": "boolean" }
+        }
+      },
+      "Contact": {
+        "type": "object",
+        "description": "A contact/social link displayed in footer",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "url": { "type": "string" },
+          "icon_type": { "type": "string", "enum": ["library", "upload", "external"] },
+          "icon_value": { "type": "string" },
+          "sort_order": { "type": "integer" },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ContactCreate": {
+        "type": "object",
+        "required": ["name", "url"],
+        "properties": {
+          "name": { "type": "string", "description": "Contact/platform name (e.g., GitHub, Twitter)" },
+          "url": { "type": "string", "description": "Full URL to the profile/page" },
+          "icon_type": { "type": "string", "enum": ["library", "upload", "external"], "default": "library" },
+          "icon_value": { "type": "string", "description": "Icon name or image URL", "default": "globe" },
+          "sort_order": { "type": "integer", "default": 0 }
+        }
+      },
+      "ContactUpdate": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "url": { "type": "string" },
+          "icon_type": { "type": "string", "enum": ["library", "upload", "external"] },
+          "icon_value": { "type": "string" },
+          "sort_order": { "type": "integer" }
+        }
+      },
+      "Media": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "filename": { "type": "string" },
+          "original_name": { "type": "string" },
+          "file_type": { "type": "string", "enum": ["image", "document"] },
+          "file_path": { "type": "string" },
+          "file_size": { "type": "integer" },
+          "mime_type": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "description": "Unauthorized - API key required or invalid",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": { "type": "string", "example": "Unauthorized" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

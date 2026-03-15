@@ -1,0 +1,42 @@
+# MCAI Platform - Apache Configuration
+#
+# NO CHANGES NEEDED FOR SUBFOLDER INSTALLATION!
+# Just update SITE_URL in config.php - this file auto-adapts.
+
+# Prevent browser caching of HTML pages
+<IfModule mod_headers.c>
+    <FilesMatch "\.(php|html)$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate"
+        Header set Pragma "no-cache"
+        Header set Expires "0"
+    </FilesMatch>
+</IfModule>
+
+# Enable URL rewriting
+RewriteEngine On
+
+# Force HTTPS (skip localhost)
+RewriteCond %{HTTPS} off
+RewriteCond %{HTTP_HOST} !^localhost [NC]
+RewriteCond %{HTTP_HOST} !^127\.0\.0\.1 [NC]
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Skip reserved directories (relative paths - work in any subfolder)
+RewriteRule ^admin(/|$) - [L]
+RewriteRule ^api(/|$) - [L]
+RewriteRule ^mcp(/|$) - [L]
+RewriteRule ^assets(/|$) - [L]
+
+# Route uploads through PHP (except images folder for performance)
+# Images served directly, other files go through file-serve.php for password protection
+RewriteRule ^uploads/images/ - [L]
+RewriteRule ^uploads/(.+)$ file-serve.php?file=$1 [QSA,L]
+
+# Don't rewrite existing files or directories
+# Route everything else through router.php
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.+)$ router.php?path=$1 [QSA,L]
+
+# Disable directory listing
+Options -Indexes

@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -24,4 +25,15 @@ jobs:
             **/.git*/**
             .github/**
             DEPLOY-INFINITYFREE.md
+            DEVELOPMENT.md
             README.md
+            docs/**
+            database/**
+
+      - name: Run migrations
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" "https://ts.page.gd/migrate.php?key=mk_ad3f313587bcb7a98503b1e4eaea4c5e")
+          echo "Migration response: $response"
+          if [ "$response" != "200" ]; then
+            echo "Warning: Migration endpoint returned $response"
+          fi
