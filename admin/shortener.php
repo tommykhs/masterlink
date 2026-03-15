@@ -279,6 +279,7 @@ $prefillIsFile = !empty($prefillFile);
                             <div class="form-group">
                                 <label for="category_id">Category</label>
                                 <select id="category_id" name="category_id" onchange="handleEditCategoryChange()">
+                                    <option value="" data-visible="1" <?= empty($editTool['category_id']) ? 'selected' : '' ?>>— No category —</option>
                                     <?php foreach ($categories as $cat): ?>
                                         <option value="<?= $cat['id'] ?>" data-visible="<?= $cat['is_visible'] ?>" <?= $editTool['category_id'] == $cat['id'] ? 'selected' : '' ?>>
                                             <?= htmlspecialchars($cat['name']) ?><?= !$cat['is_visible'] ? ' (hidden)' : '' ?>
@@ -517,6 +518,7 @@ $prefillIsFile = !empty($prefillFile);
                             <div class="form-group">
                                 <label for="new_category_id">Category</label>
                                 <select id="new_category_id" name="category_id" onchange="handleNewCategoryChange()">
+                                    <option value="" data-visible="1">— No category —</option>
                                     <?php foreach ($categories as $cat): ?>
                                         <option value="<?= $cat['id'] ?>" data-visible="<?= $cat['is_visible'] ?>" <?= $cat['id'] == $defaultCategoryId ? 'selected' : '' ?>><?= htmlspecialchars($cat['name']) ?><?= !$cat['is_visible'] ? ' (hidden)' : '' ?></option>
                                     <?php endforeach; ?>
