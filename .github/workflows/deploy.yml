@@ -1,4 +1,4 @@
-name: Deploy to InfinityFree
+name: Deploy to SiteGround
 
 on:
   push:
@@ -16,10 +16,10 @@ jobs:
       - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ftpupload.net
-          username: if0_41390850
+          server: gsgp1014.siteground.asia
+          username: go@mcai.dev
           password: ${{ secrets.FTP_PASSWORD }}
-          server-dir: /htdocs/
+          server-dir: /go.mcai.dev/public_html/
           exclude: |
             **/.git*
             **/.git*/**
@@ -29,4 +29,3 @@ jobs:
             README.md
             docs/**
             database/**
-
