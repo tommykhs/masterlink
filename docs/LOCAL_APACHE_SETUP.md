@@ -6,7 +6,7 @@ No Apache required! Use PHP's built-in development server:
 
 ```bash
 cd /path/to/masterlink
-php -S localhost:8000 server-router.php
+php -S localhost:8000 router.php
 ```
 
 Then access: `http://localhost:8000`

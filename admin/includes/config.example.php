@@ -19,10 +19,8 @@ define('SITE_URL', 'https://example.com');
 // Root install: '' (empty), Subfolder: '/link'
 define('BASE_PATH', parse_url(SITE_URL, PHP_URL_PATH) ?: '');
 
-// Upload paths
+// Upload path
 define('UPLOAD_DIR', __DIR__ . '/../../uploads/');
-define('UPLOAD_URL', SITE_URL . '/uploads/');
 
 // Session settings
 define('SESSION_NAME', 'masterlink_session');
-define('SESSION_LIFETIME', 86400); // 24 hours

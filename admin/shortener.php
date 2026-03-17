@@ -883,7 +883,7 @@ $prefillIsFile = !empty($prefillFile);
                 alert('Please enter a URL path first');
                 return;
             }
-            const url = SITE_URL + '/' + slug;
+            const url = SITE_URL + '/' + slug + '/';
             navigator.clipboard.writeText(url).then(() => {
                 // Show feedback
                 const btn = event.currentTarget;
