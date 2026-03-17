@@ -2,7 +2,7 @@
 
 A lightweight, self-hosted link management system. Like Linktree + Bitly + QR Generator in one.
 
-**Version 1.2.2**
+**Version 1.3.0**
 
 ## Features
 
@@ -15,6 +15,7 @@ A lightweight, self-hosted link management system. Like Linktree + Bitly + QR Ge
 - **Categories** - Organize links with custom icons and direct filter URLs (`/?cat=slug`)
 - **Contacts** - Social/contact links displayed in footer
 - **QR Code Generator** - One-click QR for any link
+- **PWA Support** - Embed links can be installed as standalone apps on mobile/desktop
 - **Visibility Control** - Toggle what appears publicly
 - **Theme System** - Light, Dark, Auto, or custom brand theme
 - **File Manager** - Upload and manage images and documents
@@ -98,7 +99,7 @@ Change it immediately in Settings.
 |------|----------|----------|
 | URL | Shown on homepage, opens in new tab | Regular bookmarks |
 | Redirect | 301 redirect to target | Short URLs, tracking |
-| Embed | Shows target in iframe | Google Forms, external tools |
+| Embed | Shows target in iframe, optional PWA | Google Forms, Apps Script web apps |
 | File | Serves uploaded file, optional password | Documents, downloads |
 
 ### API
@@ -120,6 +121,18 @@ curl -H "X-API-Key: your-key" https://yourdomain.com/api/bookmarks.php
 | `/api/contacts.php` | GET, POST, PUT, DELETE |
 | `/api/media.php` | GET, POST, DELETE |
 | `/api/files.php` | GET, POST, DELETE |
+
+### PWA for Embed Links
+
+Embed-type bookmarks can be installed as standalone apps (Progressive Web Apps). Toggle "PWA" in the bookmark editor when link type is Embed.
+
+**How it works:**
+- The embed page dynamically serves a `manifest.json` and service worker
+- On Android Chrome: "Add to Home Screen" banner appears automatically
+- On iOS Safari: tap Share → Add to Home Screen
+- The installed app opens fullscreen without browser chrome
+
+PWA is enabled by default for new embed bookmarks. Toggle it off per bookmark if not needed.
 
 ### MCP Server
 
@@ -158,7 +171,7 @@ masterlink/
 ├── database/           # SQL schema
 ├── includes/           # Parsedown library
 ├── mcp/                # MCP server for AI
-├── templates/          # Page, embed, password-gate, 404
+├── templates/          # Page, embed, PWA manifest/SW, password-gate, 404
 ├── uploads/            # User uploads (gitignored)
 ├── index.php           # Public homepage
 ├── router.php          # URL routing
