@@ -46,6 +46,7 @@ CREATE TABLE `bookmarks` (
   `icon_value` varchar(500) DEFAULT NULL,
   `is_visible` tinyint(1) DEFAULT '1',
   `is_featured` tinyint(1) DEFAULT '0',
+  `is_pwa` tinyint(1) DEFAULT '0',
   `sort_order` int DEFAULT '0',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

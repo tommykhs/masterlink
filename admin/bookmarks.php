@@ -179,20 +179,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_SERVER['HTTP_X_REQUESTED_W
             'icon_value' => trim($_POST['icon_value']),
             'is_visible' => isset($_POST['is_visible']) ? 1 : 0,
             'is_featured' => 0,
+            'is_pwa' => ($linkType === 'embed' && isset($_POST['is_pwa'])) ? 1 : 0,
             'sort_order' => (int) ($_POST['sort_order'] ?? 0),
         ];
 
         try {
             if ($action === 'create') {
                 $stmt = $pdo->prepare("
-                    INSERT INTO bookmarks (category_id, name, slug, description, link_type, target_url, file_path, icon_type, icon_value, is_visible, is_featured, sort_order)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO bookmarks (category_id, name, slug, description, link_type, target_url, file_path, icon_type, icon_value, is_visible, is_featured, is_pwa, sort_order)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ");
                 $stmt->execute(array_values($data));
                 $message = 'Link created successfully!';
             } else {
                 $stmt = $pdo->prepare("
-                    UPDATE bookmarks SET category_id=?, name=?, slug=?, description=?, link_type=?, target_url=?, file_path=?, icon_type=?, icon_value=?, is_visible=?, is_featured=?, sort_order=?
+                    UPDATE bookmarks SET category_id=?, name=?, slug=?, description=?, link_type=?, target_url=?, file_path=?, icon_type=?, icon_value=?, is_visible=?, is_featured=?, is_pwa=?, sort_order=?
                     WHERE id=?
                 ");
                 $stmt->execute([...array_values($data), $id]);
@@ -435,6 +436,17 @@ $createMode = isset($_GET['create']);
                                     <i data-lucide="<?= $editTool['is_visible'] ? 'eye' : 'eye-off' ?>"></i>
                                 </button>
                             </div>
+                            <div class="visibility-toggle-wrap" id="editPwaWrap" style="<?= $editTool['link_type'] === 'embed' ? '' : 'display:none' ?>">
+                                <span>PWA</span>
+                                <input type="hidden" name="is_pwa" id="editPwaInput" value="<?= ($editTool['is_pwa'] ?? 0) ? '1' : '0' ?>">
+                                <button type="button"
+                                    class="btn-visibility <?= ($editTool['is_pwa'] ?? 0) ? 'visible' : 'hidden' ?>"
+                                    id="editPwaBtn"
+                                    onclick="toggleEditPwa()"
+                                    title="<?= ($editTool['is_pwa'] ?? 0) ? 'PWA enabled - click to disable' : 'PWA disabled - click to enable' ?>">
+                                    <i data-lucide="<?= ($editTool['is_pwa'] ?? 0) ? 'smartphone' : 'smartphone' ?>"></i>
+                                </button>
+                            </div>
                         </div>
 
                         <div class="form-row">
@@ -527,6 +539,8 @@ $createMode = isset($_GET['create']);
                         document.querySelector(`#editForm input[value="${type}"]`).closest('.link-type-btn').classList.add('selected');
                         document.querySelector(`#editForm input[value="${type}"]`).checked = true;
 
+                        document.getElementById('editPwaWrap').style.display = type === 'embed' ? '' : 'none';
+
                         const slugField = document.getElementById('editSlugField');
                         const fileField = document.getElementById('editFileField');
                         const targetGroup = document.getElementById('editTargetGroup');
@@ -606,6 +620,17 @@ $createMode = isset($_GET['create']);
                         lucide.createIcons();
                     }
 
+                    function toggleEditPwa() {
+                        const btn = document.getElementById('editPwaBtn');
+                        const input = document.getElementById('editPwaInput');
+                        const isOn = input.value === '1';
+                        input.value = isOn ? '0' : '1';
+                        btn.classList.toggle('visible', !isOn);
+                        btn.classList.toggle('hidden', isOn);
+                        btn.title = isOn ? 'PWA disabled - click to enable' : 'PWA enabled - click to disable';
+                        lucide.createIcons();
+                    }
+
                     // Handle category change for visibility
                     function handleEditCategoryChange() {
                         const select = document.getElementById('category_id');
@@ -653,6 +678,17 @@ $createMode = isset($_GET['create']);
                                     onclick="toggleNewVisibility()"
                                     title="Visible - click to hide">
                                     <i data-lucide="eye"></i>
+                                </button>
+                            </div>
+                            <div class="visibility-toggle-wrap" id="newPwaWrap" style="display:none">
+                                <span>PWA</span>
+                                <input type="hidden" name="is_pwa" id="newPwaInput" value="0">
+                                <button type="button"
+                                    class="btn-visibility hidden"
+                                    id="newPwaBtn"
+                                    onclick="toggleNewPwa()"
+                                    title="PWA disabled - click to enable">
+                                    <i data-lucide="smartphone"></i>
                                 </button>
                             </div>
                         </div>
@@ -746,6 +782,8 @@ $createMode = isset($_GET['create']);
                         document.querySelector(`#createForm input[value="${type}"]`).closest('.link-type-btn').classList.add('selected');
                         document.querySelector(`#createForm input[value="${type}"]`).checked = true;
 
+                        document.getElementById('newPwaWrap').style.display = type === 'embed' ? '' : 'none';
+
                         const slugField = document.getElementById('newSlugField');
                         const fileField = document.getElementById('newFileField');
                         const targetGroup = document.getElementById('newTargetGroup');
@@ -821,6 +859,17 @@ $createMode = isset($_GET['create']);
                             btn.title = 'Visible - click to hide';
                             btn.innerHTML = '<i data-lucide="eye"></i>';
                         }
+                        lucide.createIcons();
+                    }
+
+                    function toggleNewPwa() {
+                        const btn = document.getElementById('newPwaBtn');
+                        const input = document.getElementById('newPwaInput');
+                        const isOn = input.value === '1';
+                        input.value = isOn ? '0' : '1';
+                        btn.classList.toggle('visible', !isOn);
+                        btn.classList.toggle('hidden', isOn);
+                        btn.title = isOn ? 'PWA disabled - click to enable' : 'PWA enabled - click to disable';
                         lucide.createIcons();
                     }
 

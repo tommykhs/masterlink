@@ -19,6 +19,20 @@ if ($basePath && strpos($requestPath, $basePath) === 0) {
 }
 
 $pathParts = explode('/', trim($requestPath, '/'));
+
+// Handle PWA assets for embed bookmarks: {slug}/manifest.json, {slug}/sw.js
+if (count($pathParts) === 2 && in_array($pathParts[1], ['manifest.json', 'sw.js'])) {
+    $pwaBookmark = getBookmarkBySlug($pathParts[0]);
+    if ($pwaBookmark && $pwaBookmark['link_type'] === 'embed' && !empty($pwaBookmark['is_pwa'])) {
+        if ($pathParts[1] === 'manifest.json') {
+            require __DIR__ . '/templates/pwa-manifest.php';
+        } else {
+            require __DIR__ . '/templates/pwa-sw.php';
+        }
+        exit;
+    }
+}
+
 $slug = $pathParts[0] ?? '';
 
 if (empty($slug)) {
@@ -66,6 +80,15 @@ switch ($bookmark['link_type']) {
         exit;
 
     case 'embed':
+        // Ensure trailing slash for PWA relative URL resolution
+        if (!empty($bookmark['is_pwa'])) {
+            $requestUri = $_SERVER['REQUEST_URI'];
+            if (substr($requestUri, -1) !== '/' && strpos($requestUri, '?') === false) {
+                header('HTTP/1.1 301 Moved Permanently');
+                header('Location: ' . $requestUri . '/');
+                exit;
+            }
+        }
         // Show in iframe with bookmark metadata
         $bookmarkName = htmlspecialchars($bookmark['name']);
         $bookmarkDescription = htmlspecialchars($bookmark['description'] ?? '');
@@ -73,6 +96,7 @@ switch ($bookmark['link_type']) {
         $bookmarkIconValue = $bookmark['icon_value'];
         $targetUrl = htmlspecialchars($bookmark['target_url']);
         $siteLogo = getSetting('site_logo');
+        $isPwa = !empty($bookmark['is_pwa']);
         require __DIR__ . '/templates/embed.php';
         exit;
 

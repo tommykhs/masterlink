@@ -7,10 +7,20 @@
     <?php if ($bookmarkDescription): ?>
     <meta name="description" content="<?= $bookmarkDescription ?>">
     <?php endif; ?>
-    <?php if ($bookmarkIconType === 'external' && $bookmarkIconValue): ?>
-    <link rel="icon" type="image/png" href="<?= htmlspecialchars($bookmarkIconValue) ?>">
-    <?php else: ?>
-    <link rel="icon" type="image/png" href="<?= htmlspecialchars($siteLogo) ?>">
+    <?php
+    $iconHref = ($bookmarkIconType === 'external' && $bookmarkIconValue)
+        ? htmlspecialchars($bookmarkIconValue)
+        : htmlspecialchars($siteLogo);
+    ?>
+    <link rel="icon" type="image/png" href="<?= $iconHref ?>">
+    <?php if (!empty($isPwa)): ?>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#667eea">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="<?= $bookmarkName ?>">
+    <link rel="apple-touch-icon" href="<?= $iconHref ?>">
     <?php endif; ?>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -25,5 +35,12 @@
 </head>
 <body>
     <iframe src="<?= $targetUrl ?>" allow="fullscreen" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+    <?php if (!empty($isPwa)): ?>
+    <script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js', { scope: './' });
+    }
+    </script>
+    <?php endif; ?>
 </body>
 </html>

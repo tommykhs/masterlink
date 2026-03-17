@@ -124,8 +124,8 @@ try {
             }
 
             $stmt = $pdo->prepare("
-                INSERT INTO bookmarks (category_id, name, slug, description, link_type, target_url, file_path, password, icon_type, icon_value, is_visible, is_featured, sort_order)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO bookmarks (category_id, name, slug, description, link_type, target_url, file_path, password, icon_type, icon_value, is_visible, is_featured, is_pwa, sort_order)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
 
             $stmt->execute([
@@ -141,6 +141,7 @@ try {
                 $input['icon_value'] ?? 'lucide:box',
                 $input['is_visible'] ?? true,
                 $input['is_featured'] ?? false,
+                $input['is_pwa'] ?? false,
                 $input['sort_order'] ?? 0,
             ]);
 
@@ -166,7 +167,7 @@ try {
             // Build dynamic update query
             $fields = [];
             $values = [];
-            $allowed = ['category_id', 'name', 'slug', 'description', 'link_type', 'target_url', 'file_path', 'icon_type', 'icon_value', 'is_visible', 'is_featured', 'sort_order'];
+            $allowed = ['category_id', 'name', 'slug', 'description', 'link_type', 'target_url', 'file_path', 'icon_type', 'icon_value', 'is_visible', 'is_featured', 'is_pwa', 'sort_order'];
 
             foreach ($allowed as $field) {
                 if (isset($input[$field])) {
