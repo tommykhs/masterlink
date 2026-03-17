@@ -34,7 +34,7 @@
     </style>
 </head>
 <body>
-    <iframe src="<?= $targetUrl ?>" allow="fullscreen" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+    <iframe src="<?= $targetUrl ?>" allow="fullscreen popups-to-escape-sandbox" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"></iframe>
     <?php if (!empty($isPwa)): ?>
     <script>
     if ('serviceWorker' in navigator) {
