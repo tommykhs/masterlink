@@ -26,7 +26,7 @@ echo json_encode([
     'theme_color' => '#667eea',
     'background_color' => '#f8fafc',
     'icons' => [
-        ['src' => $iconUrl, 'sizes' => '192x192', 'type' => 'image/png', 'purpose' => 'any maskable'],
-        ['src' => $iconUrl, 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'any maskable'],
+        ['src' => $iconUrl, 'sizes' => '192x192', 'type' => 'image/png', 'purpose' => 'any'],
+        ['src' => $iconUrl, 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'any'],
     ]
 ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
