@@ -15,7 +15,7 @@
     <link rel="icon" type="image/png" href="<?= $iconHref ?>">
     <?php if (!empty($isPwa)): ?>
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#667eea">
+    <meta name="theme-color" content="#667eea" id="theme-color">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -40,6 +40,11 @@
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('sw.js', { scope: './' });
     }
+    window.addEventListener('message', function(e) {
+        if (e.data && e.data.themeColor && /^#[0-9A-Fa-f]{6}$/.test(e.data.themeColor)) {
+            document.getElementById('theme-color').setAttribute('content', e.data.themeColor);
+        }
+    });
     </script>
     <?php endif; ?>
 </body>
