@@ -2,7 +2,7 @@
 
 A lightweight, self-hosted link management system. Like Linktree + Bitly + QR Generator in one.
 
-**Version 1.3.0**
+**Version 2.0**
 
 ## Features
 
