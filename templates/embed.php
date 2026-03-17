@@ -15,7 +15,7 @@
     <link rel="icon" type="image/png" href="<?= $iconHref ?>">
     <?php if (!empty($isPwa)): ?>
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#667eea" id="theme-color">
+    <meta name="theme-color" content="transparent" id="theme-color">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -41,8 +41,10 @@
         navigator.serviceWorker.register('sw.js', { scope: './' });
     }
     window.addEventListener('message', function(e) {
-        if (e.data && e.data.themeColor && /^#[0-9A-Fa-f]{6}$/.test(e.data.themeColor)) {
-            document.getElementById('theme-color').setAttribute('content', e.data.themeColor);
+        if (e.data && e.data.themeColor && /^#[0-9A-Fa-f]{3,6}$/.test(e.data.themeColor)) {
+            var meta = document.getElementById('theme-color');
+            meta.setAttribute('content', e.data.themeColor);
+            document.body.style.backgroundColor = e.data.themeColor;
         }
     });
     </script>

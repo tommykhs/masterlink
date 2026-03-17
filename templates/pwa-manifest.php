@@ -23,7 +23,7 @@ echo json_encode([
     'start_url' => $basePath . '/' . $slug . '/',
     'scope' => $basePath . '/' . $slug . '/',
     'display' => 'standalone',
-    'theme_color' => '#667eea',
+    'theme_color' => '#ffffff',
     'background_color' => '#f8fafc',
     'icons' => [
         ['src' => $iconUrl, 'sizes' => '192x192', 'type' => 'image/png', 'purpose' => 'any'],
