@@ -179,7 +179,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_SERVER['HTTP_X_REQUESTED_W
             'icon_value' => trim($_POST['icon_value']),
             'is_visible' => isset($_POST['is_visible']) ? 1 : 0,
             'is_featured' => 0,
-            'is_pwa' => ($linkType === 'embed' && isset($_POST['is_pwa'])) ? 1 : 0,
+            'is_pwa' => ($linkType === 'embed' && ($_POST['is_pwa'] ?? '1') === '1') ? 1 : 0,
             'sort_order' => (int) ($_POST['sort_order'] ?? 0),
         ];
 
@@ -682,12 +682,12 @@ $createMode = isset($_GET['create']);
                             </div>
                             <div class="visibility-toggle-wrap" id="newPwaWrap" style="display:none">
                                 <span>PWA</span>
-                                <input type="hidden" name="is_pwa" id="newPwaInput" value="0">
+                                <input type="hidden" name="is_pwa" id="newPwaInput" value="1">
                                 <button type="button"
-                                    class="btn-visibility hidden"
+                                    class="btn-visibility visible"
                                     id="newPwaBtn"
                                     onclick="toggleNewPwa()"
-                                    title="PWA disabled - click to enable">
+                                    title="PWA enabled - click to disable">
                                     <i data-lucide="smartphone"></i>
                                 </button>
                             </div>
