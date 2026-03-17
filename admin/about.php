@@ -46,7 +46,7 @@ $lastUpdate = getLastCodeUpdate();
                     <div class="info-list">
                         <div class="info-item">
                             <span class="info-label">Version</span>
-                            <span class="info-value">1.2.2</span>
+                            <span class="info-value"><?= APP_VERSION ?></span>
                         </div>
                         <div class="info-item">
                             <span class="info-label">Last Updated</span>

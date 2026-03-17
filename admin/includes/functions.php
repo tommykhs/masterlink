@@ -9,6 +9,7 @@ require_once __DIR__ . '/db.php';
  * Branding Configuration
  * Update these values to change site-wide branding
  */
+define('APP_VERSION', '2.0');
 define('BRAND_NAME', 'Master Link');
 define('BRAND_URL', 'https://github.com/mcailab/masterlink/');
 define('BRAND_AUTHOR', 'Master Link');
