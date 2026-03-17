@@ -435,7 +435,7 @@ $shortenerCount = $pdo->query("SELECT COUNT(*) FROM bookmarks WHERE link_type IN
                                                         <a href="shortener.php?edit=<?= $link['id'] ?>" class="shortener-name"><?= htmlspecialchars($link['name']) ?></a>
                                                         <div class="slug-row">
                                                             <a href="<?= url('/admin/qr.php') ?>?url=<?= urlencode($siteUrl . '/' . $link['slug']) ?>" class="qr-btn" title="Generate QR Code"><i data-lucide="scan-qr-code"></i></a>
-                                                            <a href="<?= $siteUrl ?>/<?= htmlspecialchars($link['slug']) ?>" target="_blank" class="slug-url"><?= parse_url($siteUrl, PHP_URL_HOST) ?>/<?= htmlspecialchars($link['slug']) ?></a>
+                                                            <a href="<?= $siteUrl ?>/<?= htmlspecialchars($link['slug']) ?>" target="_blank" class="slug-url"><?= parse_url($siteUrl, PHP_URL_HOST) . (parse_url($siteUrl, PHP_URL_PATH) ?: '') ?>/<?= htmlspecialchars($link['slug']) ?></a>
                                                         </div>
                                                     </div>
                                                 </div>

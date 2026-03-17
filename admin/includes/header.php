@@ -19,7 +19,7 @@ $siteUrl = rtrim(SITE_URL, '/');
 <script>
 // Site configuration for JavaScript
 const SITE_URL = '<?= $siteUrl ?>';
-const SITE_HOST = '<?= parse_url($siteUrl, PHP_URL_HOST) ?>';
+const SITE_HOST = '<?= parse_url($siteUrl, PHP_URL_HOST) . (parse_url($siteUrl, PHP_URL_PATH) ?: '') ?>';
 
 // Mobile menu toggle
 document.addEventListener('DOMContentLoaded', function() {

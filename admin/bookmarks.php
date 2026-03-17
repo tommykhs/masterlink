@@ -503,7 +503,7 @@ $createMode = isset($_GET['create']);
                         <div class="form-group slug-field <?= $editTool['link_type'] !== 'url' ? 'show' : '' ?>" id="editSlugField">
                             <label for="slug">URL Path *</label>
                             <div class="slug-input-wrapper">
-                                <span class="slug-prefix"><?= parse_url($siteUrl, PHP_URL_HOST) ?>/</span>
+                                <span class="slug-prefix"><?= parse_url($siteUrl, PHP_URL_HOST) . (parse_url($siteUrl, PHP_URL_PATH) ?: '') ?>/</span>
                                 <input type="text" id="slug" name="slug" value="<?= htmlspecialchars($editTool['slug']) ?>" placeholder="my-tool">
                                 <div class="slug-actions">
                                     <button type="button" onclick="copySlugUrl('edit')" title="Copy URL">
@@ -745,7 +745,7 @@ $createMode = isset($_GET['create']);
                         <div class="form-group slug-field" id="newSlugField">
                             <label for="new_slug">URL Path *</label>
                             <div class="slug-input-wrapper">
-                                <span class="slug-prefix"><?= parse_url($siteUrl, PHP_URL_HOST) ?>/</span>
+                                <span class="slug-prefix"><?= parse_url($siteUrl, PHP_URL_HOST) . (parse_url($siteUrl, PHP_URL_PATH) ?: '') ?>/</span>
                                 <input type="text" id="new_slug" name="slug" placeholder="my-tool">
                                 <div class="slug-actions">
                                     <button type="button" onclick="copySlugUrl('new')" title="Copy URL">
@@ -1046,7 +1046,7 @@ $createMode = isset($_GET['create']);
                                             <?php if ($tool['link_type'] === 'redirect' || $tool['link_type'] === 'embed' || $tool['link_type'] === 'file'): ?>
                                             <div class="slug-row">
                                                 <a href="<?= url('/admin/qr.php') ?>?url=<?= urlencode($siteUrl . '/' . $tool['slug']) ?>" class="qr-btn" title="Generate QR Code"><i data-lucide="scan-qr-code"></i></a>
-                                                <a href="<?= $siteUrl ?>/<?= htmlspecialchars($tool['slug']) ?>" target="_blank" class="slug-url"><?= parse_url($siteUrl, PHP_URL_HOST) ?>/<?= htmlspecialchars($tool['slug']) ?></a>
+                                                <a href="<?= $siteUrl ?>/<?= htmlspecialchars($tool['slug']) ?>" target="_blank" class="slug-url"><?= parse_url($siteUrl, PHP_URL_HOST) . (parse_url($siteUrl, PHP_URL_PATH) ?: '') ?>/<?= htmlspecialchars($tool['slug']) ?></a>
                                             </div>
                                             <?php else: ?>
                                             <?php $displayUrl = preg_replace('#^https?://#', '', $tool['target_url']); ?>
