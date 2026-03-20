@@ -835,9 +835,15 @@ var google = { script: { run: null } };
             method: 'POST',
             headers: { 'Content-Type': 'text/plain' },
             body: JSON.stringify({ apikey: apikey, action: prop, params: params }),
-            redirect: 'follow'
+            redirect: 'follow',
+            mode: 'cors'
           })
-          .then(function(r) { return r.json(); })
+          .then(function(r) {
+            if (r.ok) return r.json();
+            // If redirected (opaque), try fetching the redirected URL
+            if (r.redirected) return r.json();
+            throw new Error('HTTP ' + r.status);
+          })
           .then(function(data) {
             if (data && data.error) {
               _failure(data.error);
