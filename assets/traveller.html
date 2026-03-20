@@ -1,0 +1,4377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0891B2">
+  
+  
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="color-scheme" content="dark light">
+  <title>Traveller</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/5219/5219577.png">
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/5219/5219577.png">
+  <link rel="manifest" href="data:application/json,<?= encodeURIComponent(JSON.stringify({
+    name: 'Traveller',
+    short_name: 'Traveller',
+    description: 'Travel Planning & Tracking',
+    start_url: ScriptApp.getService().getUrl(),
+    display: 'standalone',
+    background_color: '#121212',
+    theme_color: '#0891B2',
+    icons: [
+      { src: 'https://cdn-icons-png.flaticon.com/512/5219/5219577.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
+      { src: 'https://cdn-icons-png.flaticon.com/256/5219/5219577.png', sizes: '256x256', type: 'image/png' },
+      { src: 'https://cdn-icons-png.flaticon.com/128/5219/5219577.png', sizes: '128x128', type: 'image/png' }
+    ]
+  })) ?>">
+  <style>
+    :root {
+      --primary: #0891B2;
+      --primary-dark: #0E7490;
+      --primary-light: rgba(8, 145, 178, 0.05);
+      --primary-lighter: rgba(8, 145, 178, 0.12);
+      --positive: #00A67E;
+      --negative: #FF6B35;
+      --important: #E53E3E;
+      --important-bg: rgba(229, 62, 62, 0.12);
+      --text: #333;
+      --text-light: #666;
+      --text-muted: #999;
+      --bg: #f5f5f5;
+      --card-bg: #fff;
+      --border: #e0e0e0;
+      --shadow: 0 2px 8px rgba(0,0,0,0.08);
+      --radius: 12px;
+      --header-height: 56px;
+      --input-bg: rgba(0,0,0,0.04);
+      --input-border: rgba(0,0,0,0.15);
+      --input-focus-bg: rgba(0,0,0,0.08);
+      --input-placeholder: rgba(0,0,0,0.35);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #121212; --card-bg: #1e1e1e; --text: #e0e0e0;
+        --text-light: #aaa; --text-muted: #666; --border: #333;
+        --shadow: 0 2px 8px rgba(0,0,0,0.3);
+        --important-bg: rgba(229, 62, 62, 0.12);
+        --input-bg: rgba(255,255,255,0.08);
+        --input-border: rgba(255,255,255,0.18);
+        --input-focus-bg: rgba(255,255,255,0.12);
+        --input-placeholder: rgba(255,255,255,0.3);
+        color-scheme: dark;
+      }
+      /* Prevent dark mode from inverting images */
+      img { filter: none !important; -webkit-filter: none !important; color-scheme: only light; }
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; overflow-x: hidden;
+    }
+
+    /* Owner access control */
+    body.read-only .owner-only { display: none !important; }
+
+    /* Header */
+    .header {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--primary); color: white;
+      height: var(--header-height);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .header-left, .header-right { display: flex; gap: 4px; flex: 1; }
+    .header-right { justify-content: flex-end; }
+    .header-center {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      cursor: pointer; line-height: 1;
+    }
+    .header-title {
+      display: flex; align-items: center; gap: 8px;
+      font-weight: 600; font-size: 18px;
+    }
+    .header-logo { width: 28px; height: 28px; object-fit: contain; }
+    .header-subtitle {
+      font-size: 10px; font-weight: 400; color: rgba(255,255,255,0.7);
+      margin-top: 1px;
+    }
+
+    .icon-btn {
+      width: 36px; height: 36px; border-radius: 50%; border: none;
+      background: rgba(255,255,255,0.2); color: white;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: background 0.2s;
+    }
+    .icon-btn:active { background: rgba(255,255,255,0.3); }
+    .icon-btn.spinning .material-icons-round { animation: spin 1s linear infinite; }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+
+    /* Main */
+    .main { padding: 12px; padding-bottom: 80px; min-height: calc(100vh - var(--header-height)); }
+    .content-container { max-width: 600px; margin: 0 auto; }
+
+    /* Map Tab */
+    .main.map-active { padding: 0; overflow: hidden; }
+    .main.map-active .content-container { max-width: none; }
+    #mapContainer { width: 100%; height: calc(100vh - var(--header-height) - 56px); }
+    #mapContainer iframe { width: 100%; height: 100%; border: none; display: block; }
+
+    /* Card */
+    .card {
+      background: var(--card-bg); border-radius: var(--radius);
+      border: 1px solid var(--border); margin-bottom: 12px;
+      box-shadow: var(--shadow); overflow: hidden;
+    }
+    .card-padded { padding: 12px 14px; }
+    .card-padded-sm { padding: 12px 8px; }
+
+    /* Shared: empty state */
+    .empty-state { padding: 14px; color: var(--text-muted); font-size: 13px; }
+
+    /* Bottom Tab Bar */
+    .bottom-tabs {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+      background: var(--card-bg); border-top: 1px solid var(--border);
+      display: flex; max-width: 600px; margin: 0 auto;
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
+      padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+    .bottom-tab {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      gap: 2px; padding: 8px 4px 6px; border: none; background: none;
+      color: var(--text-muted); font-size: 10px; font-weight: 500;
+      font-family: inherit; cursor: pointer; transition: color 0.2s;
+    }
+    .bottom-tab .material-icons-round { font-size: 22px; }
+    .bottom-tab.active { color: white; background: var(--primary); }
+
+    /* Trip Selector (in Trip tab) */
+    .trip-selector {
+      display: flex; align-items: center; gap: 10px;
+      padding: 14px; cursor: pointer;
+      position: sticky; top: var(--header-height); z-index: 80;
+    }
+    .trip-selector-flag { width: 36px; height: 24px; border-radius: 3px; object-fit: cover; flex-shrink: 0; }
+    .trip-selector-flag, .trip-modal-item-flag, .header-logo,
+    .picker-item img, .dayplan-hotel img {
+      filter: none !important;
+      -webkit-filter: none !important;
+      color-scheme: only light;
+      mix-blend-mode: normal;
+      isolation: isolate;
+    }
+    .trip-selector-info { flex: 1; min-width: 0; }
+    .trip-selector-name { font-size: 15px; font-weight: 600; }
+    .trip-selector-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+    /* Section title */
+    .section-title {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 16px; font-weight: 600; color: var(--text);
+      padding: 16px 0 8px;
+    }
+    .section-title .material-icons-round { font-size: 20px; color: var(--primary); }
+    .section-title-badge {
+      margin-left: auto; font-size: 12px; font-weight: 600;
+      background: var(--primary); color: #fff;
+      padding: 2px 8px; border-radius: 10px;
+      flex-shrink: 0; white-space: nowrap;
+    }
+
+    .divider { height: 1px; background: var(--border); }
+
+    /* Shared: group header (expense categories, checklist categories, postcard groups) */
+    .group-header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 14px; cursor: pointer;
+      border-bottom: 2px solid var(--primary);
+      background: rgba(8, 145, 178, 0.1);
+    }
+    .group-header .material-icons-round { font-size: 18px; }
+    .group-header-name { font-size: 13px; font-weight: 600; flex: 1; }
+    .group-header-meta { font-size: 12px; color: var(--text-muted); }
+    .group-header-meta.primary { color: var(--primary); font-size: 13px; font-weight: 600; }
+    .group-header-dim { opacity: 0.6; }
+
+    /* Flight */
+    .flight-row { padding: 10px 14px; }
+    .flight-cols { display: flex; align-items: center; }
+    .flight-col-left, .flight-col-right { flex: 1; }
+    .flight-col-right { text-align: right; }
+    .flight-col-center { text-align: center; padding: 0 8px; flex-shrink: 0; }
+    .flight-airport { font-size: 18px; font-weight: 700; color: var(--text); }
+    .flight-time { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .flight-no { font-size: 11px; color: var(--text-muted); font-weight: 500; }
+    .flight-arrow-line { color: var(--primary); }
+    .flight-arrow-line .material-icons-round { font-size: 18px; }
+    .flight-duration { font-size: 10px; color: var(--text-muted); }
+    .flight-ref {
+      font-size: 11px; color: var(--text-muted); margin-top: 6px;
+      text-align: center; display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .flight-booking-link {
+      color: var(--primary); text-decoration: none;
+      display: inline-flex; align-items: center;
+    }
+    .flight-booking-link .material-icons-round { font-size: 18px; }
+
+    /* Accommodation */
+    .accom-item { border-bottom: 1px solid var(--border); }
+    .accom-item:last-child { border-bottom: none; }
+    .accom-row {
+      display: grid; grid-template-columns: 70px 1fr auto auto;
+      align-items: center; gap: 6px;
+      padding: 10px 14px;
+    }
+    .accom-date { font-size: 12px; color: var(--text-muted); }
+    .accom-name { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .accom-link { text-decoration: none; color: var(--primary); }
+    .accom-note-btn {
+      cursor: pointer; display: flex; align-items: center; padding: 0 2px;
+    }
+    .accom-note-btn .material-icons-round { font-size: 14px; color: var(--text-muted); }
+    .accom-cost { font-size: 13px; font-weight: 600; color: var(--primary); text-align: right; }
+    .accom-note {
+      display: none; font-size: 11px; color: var(--text-muted);
+      padding: 0 14px 8px 84px;
+    }
+    .accom-note.show { display: block; }
+
+    /* Day Plan rows */
+    .dayplan-row { padding: 8px 14px; border-bottom: 1px solid var(--border); }
+    .dayplan-row:last-child { border-bottom: none; }
+    .dayplan-r1 {
+      display: flex; align-items: center; gap: 6px;
+    }
+    .dayplan-date { font-size: 12px; font-weight: 500; color: var(--text-muted); flex-shrink: 0; }
+    .dayplan-itin { font-size: 13px; font-weight: 500; color: var(--text); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dayplan-dist { font-size: 11px; color: var(--primary); font-weight: 500; flex-shrink: 0; }
+    .dayplan-r2 {
+      display: flex; align-items: center; gap: 4px; margin-top: 2px;
+    }
+    .dayplan-r2 .material-icons-round { font-size: 13px; color: var(--text-muted); flex-shrink: 0; }
+    .dayplan-hotel { font-size: 12px; color: var(--text-light); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dayplan-hotel a { color: var(--primary); text-decoration: none; }
+    .dayplan-note { font-size: 11px; color: var(--text-muted); max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-shrink: 0; }
+    .dayplan-cost { font-size: 12px; font-weight: 600; color: var(--primary); flex-shrink: 0; margin-left: auto; }
+
+    /* Info */
+    .info-row { padding: 10px 14px; }
+    .info-item { font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .info-link { font-size: 13px; color: var(--primary); text-decoration: none; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* Expenses */
+    .exp-bar-row {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 6px;
+    }
+    .exp-bar-row:last-child { margin-bottom: 0; }
+    .exp-bar-label {
+      display: flex; align-items: center;
+      width: 24px; flex-shrink: 0;
+    }
+    .exp-bar-label .material-icons-round { font-size: 14px; }
+    .exp-bar-track {
+      flex: 1; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden;
+    }
+    .exp-bar-fill {
+      height: 100%; background: var(--primary); border-radius: 4px;
+      transition: width 0.3s;
+    }
+    .exp-bar-amt { font-size: 11px; font-weight: 600; color: var(--primary); min-width: 50px; text-align: right; }
+
+    .collapsed { display: none !important; }
+
+    .exp-row {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px 14px;
+    }
+    .exp-row-info { flex: 1; min-width: 0; }
+    .exp-row-item { font-size: 13px; font-weight: 500; }
+    .exp-row-meta { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+    .exp-row-amounts { text-align: right; flex-shrink: 0; }
+    .exp-row-hk { font-size: 13px; font-weight: 600; color: var(--primary); }
+    .exp-row-local { font-size: 11px; color: var(--text-muted); }
+
+    /* Card summary title */
+    .card-summary-title { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
+
+    /* Trip List Modal */
+    .trip-modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+      z-index: 200; align-items: flex-end; justify-content: center;
+    }
+    .trip-modal-overlay.active { display: flex; }
+    .trip-modal {
+      background: var(--card-bg); border-radius: 16px 16px 0 0;
+      width: 100%; max-width: 600px; max-height: 70vh; overflow-y: auto;
+      padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+    .trip-modal-header {
+      padding: 16px; font-weight: 600; font-size: 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+      position: sticky; top: 0; background: var(--card-bg); z-index: 1;
+    }
+    .trip-modal-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px; cursor: pointer; transition: background 0.15s;
+      border-bottom: 1px solid var(--border);
+    }
+    .trip-modal-item:active { background: var(--primary-light); }
+    .trip-modal-item.selected { background: rgba(8, 145, 178, 0.2); border-left: 3px solid var(--primary); }
+    .trip-modal-item-flag { width: 36px; height: 24px; border-radius: 3px; object-fit: cover; flex-shrink: 0; }
+    .trip-modal-item-info { flex: 1; }
+    .trip-modal-item-name { font-size: 14px; font-weight: 500; }
+    .trip-modal-item-dates { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+    .trip-modal-item .material-icons-round { color: var(--primary); font-size: 20px; }
+
+    /* Stats */
+    .stats-row {
+      display: flex; gap: 8px; padding: 0 0 12px; overflow-x: auto;
+      scrollbar-width: none; -ms-overflow-style: none;
+    }
+    .stats-row::-webkit-scrollbar { display: none; }
+    .stat-chip {
+      display: flex; align-items: center; gap: 4px;
+      padding: 4px 10px; border-radius: 16px;
+      background: var(--primary-light); color: var(--primary);
+      font-size: 12px; font-weight: 500; white-space: nowrap; flex-shrink: 0;
+    }
+    .stat-chip .material-icons-round { font-size: 14px; }
+
+    /* Sub Nav (shared: day nav, extras sub-nav) */
+    .sub-nav {
+      position: sticky; top: var(--header-height); z-index: 80;
+      background: var(--card-bg); border-bottom: 1px solid var(--border);
+      display: flex; overflow-x: auto; padding: 0 8px;
+      scrollbar-width: none; -ms-overflow-style: none;
+      max-width: 600px; margin: 0 auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .sub-nav::-webkit-scrollbar { display: none; }
+    .sub-nav-item {
+      padding: 10px 12px; font-size: 13px;
+      color: var(--text-muted); border: none; background: none;
+      cursor: pointer; white-space: nowrap; border-bottom: 2px solid transparent;
+      transition: color 0.2s, border-color 0.2s; font-family: inherit;
+      display: inline-flex; align-items: center; gap: 4px;
+    }
+    .sub-nav-item.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 500; }
+
+    /* Extras Sub-Nav: extends .sub-nav with centered items */
+    .sub-nav.extras-nav .sub-nav-item { flex: 1; text-align: center; }
+    .sub-nav-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 18px; height: 18px; padding: 0 5px;
+      border-radius: 9px; font-size: 11px; font-weight: 600;
+      background: var(--primary); color: #fff;
+      margin-left: 6px; vertical-align: 1px;
+    }
+
+    /* Plan Row */
+    .plan-row {
+      padding: 10px 14px; border-bottom: 1px solid var(--border);
+    }
+    .plan-row:last-child { border-bottom: none; }
+    .plan-header {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      margin-bottom: 4px;
+    }
+    .plan-date { font-size: 13px; font-weight: 600; color: var(--primary); }
+    .plan-hotel { font-size: 11px; color: var(--text-muted); text-align: right; max-width: 50%; }
+    .plan-hotel-cost { font-weight: 600; color: var(--text-light); }
+    .plan-distance-right { font-size: 13px; font-weight: 600; color: var(--primary); flex-shrink: 0; }
+
+    /* Timeline Section */
+    .day-section { scroll-margin-top: calc(var(--header-height) + 40px); }
+    .day-section-header {
+      padding: 12px 14px; background: rgba(8, 145, 178, 0.15);
+      border-bottom: 2px solid var(--primary);
+      cursor: pointer;
+    }
+    .day-section-row1 {
+      display: flex; align-items: center; gap: 6px;
+    }
+    .day-section-row2 {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 5px;
+    }
+    .day-section-date { font-size: 13px; font-weight: 600; color: var(--primary); flex-shrink: 0; }
+    .day-section-itin { font-size: 13px; font-weight: 500; color: var(--text); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .day-section-hotel { font-size: 13px; font-weight: 400; color: var(--text-light); white-space: nowrap; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+    .day-section-hotel-link { text-decoration: none; color: var(--text-light); }
+    .day-section-cost { font-size: 13px; font-weight: 600; color: var(--primary); flex-shrink: 0; }
+    .day-section-expand-content { margin-top: 6px; }
+    .day-section-note {
+      font-size: 12px; color: var(--text-light); padding: 2px 0;
+    }
+    .day-section-attractions {
+      font-size: 11px; color: var(--text-light); padding: 4px 0 2px;
+      word-break: break-word; line-height: 1.5;
+    }
+    .day-section-expand {
+      display: flex; justify-content: center; margin-top: 2px;
+    }
+    .day-section-expand .material-icons-round {
+      font-size: 16px; color: var(--text-muted);
+    }
+
+    .timeline-row {
+      padding: 10px 14px; border-bottom: 1px solid var(--border);
+    }
+    .timeline-row:last-child { border-bottom: none; }
+    .timeline-row.important {
+      background: rgba(214, 158, 46, 0.12);
+      border-left: 3px solid #D69E2E;
+    }
+    .timeline-row.important .timeline-event { color: #D69E2E; font-weight: 700; }
+    .timeline-row.important .timeline-time { color: #D69E2E; font-weight: 600; }
+    .timeline-row.important .timeline-detail { color: #D69E2E; opacity: 0.7; }
+    .timeline-row.important .timeline-cost { color: #D69E2E; }
+
+    /* Today/Now highlights */
+    .sub-nav-item.is-today { font-weight: 700; }
+    .dayplan-row.is-today { border-left: 3px solid var(--primary); animation: breathe 3s ease-in-out infinite; }
+    .dayplan-row.is-today .dayplan-date { color: var(--primary); font-weight: 700; }
+    .day-section.is-today .day-section-header { border-left: 3px solid var(--primary); }
+    .day-section.is-today .day-section-date { color: var(--primary); }
+    .timeline-row.is-now { border-left: 3px solid var(--primary); animation: breathe 3s ease-in-out infinite; }
+    .dayplan-row.is-today { border-left: 3px solid var(--primary); animation: breathe 3s ease-in-out infinite; }
+    @keyframes breathe {
+      0%, 100% { background: transparent; }
+      50% { background: rgba(8, 145, 178, 0.35); }
+    }
+    .today-badge { font-size: 10px; font-weight: 600; color: var(--primary); background: var(--primary-lighter); padding: 1px 6px; border-radius: 8px; margin-left: 6px; }
+
+    .timeline-event-row {
+      display: flex; align-items: baseline; gap: 8px;
+    }
+    .timeline-time {
+      font-size: 13px; font-weight: 500; color: var(--text);
+      font-variant-numeric: tabular-nums;
+      min-width: 76px; flex-shrink: 0;
+    }
+    .timeline-date-badge {
+      display: inline-block; font-size: 9px; font-weight: 600;
+      background: var(--primary); color: white;
+      padding: 1px 4px; border-radius: 3px; margin-left: 4px;
+      vertical-align: 1px;
+    }
+    .timeline-event { font-size: 13px; font-weight: 500; color: var(--text); flex: 1; min-width: 0; }
+    .timeline-cost {
+      font-size: 13px; color: var(--primary); font-weight: 600; flex-shrink: 0;
+    }
+    .timeline-detail-row {
+      display: flex; align-items: center; gap: 6px;
+      margin-top: 4px;
+    }
+    .timeline-detail {
+      font-size: 13px; color: var(--text-muted); font-weight: 400;
+      word-break: break-word; flex: 1; min-width: 0;
+    }
+    .timeline-link-btn {
+      width: 20px; height: 20px; border-radius: 50%;
+      background: var(--primary-light); color: var(--primary);
+      display: flex; align-items: center; justify-content: center;
+      text-decoration: none; flex-shrink: 0;
+    }
+    .timeline-link-btn .material-icons-round { font-size: 14px; }
+
+    /* Postcard */
+    .postcard-row {
+      display: flex; align-items: flex-start; gap: 8px;
+      padding: 10px 14px; transition: opacity 0.2s;
+    }
+    .postcard-row:not(.selected) { opacity: 0.4; }
+    .postcard-row.selected { opacity: 1; }
+    .postcard-row .check-box .material-icons-round { font-size: 22px; color: var(--text-muted); }
+    .postcard-row.selected .check-box .material-icons-round { color: var(--primary); }
+    .postcard-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+    .postcard-name { font-size: 13px; font-weight: 500; }
+    .postcard-address { font-size: 11px; color: var(--text-muted); line-height: 1.4; word-break: break-word; }
+    .postcard-copy {
+      flex-shrink: 0; cursor: pointer; padding: 2px;
+      display: flex; align-items: center;
+    }
+    .postcard-copy .material-icons-round { font-size: 16px; color: var(--text-muted); }
+    .postcard-copy:active .material-icons-round { color: var(--primary); }
+
+    /* Checklist */
+    .check-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 14px; transition: opacity 0.2s;
+    }
+    /* Unchecked = dim */
+    .check-row:not(.checked) { opacity: 0.4; }
+    /* Checked = full color */
+    .check-row.checked { opacity: 1; }
+
+    .check-box { cursor: pointer; flex-shrink: 0; display: flex; }
+    .check-box .material-icons-round { font-size: 22px; color: var(--text-muted); }
+    .check-row.checked .check-box .material-icons-round { color: var(--primary); }
+
+    .check-item-name { font-size: 13px; font-weight: 500; flex: 1; min-width: 0; }
+    .check-amount { font-size: 11px; color: var(--text-muted); font-weight: 500; flex-shrink: 0; }
+    .check-remarks { font-size: 11px; color: var(--text-muted); flex-shrink: 0; margin-right: 4px; }
+
+    .check-imp {
+      width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; cursor: pointer;
+      transition: background 0.2s;
+    }
+    .check-imp.imp1 { background: var(--important); }
+    .check-imp.imp2 { background: #D69E2E; }
+    .check-imp.imp3 { background: var(--text-muted); }
+
+    /* Checked + imp1: red */
+    .check-row.checked.check-critical .check-item-name { color: var(--important); font-weight: 600; }
+    .check-row.checked.check-critical .check-box .material-icons-round { color: var(--important); }
+    /* Checked + imp2: amber */
+    .check-row.checked.check-warn .check-item-name { color: #D69E2E; font-weight: 500; }
+    .check-row.checked.check-warn .check-box .material-icons-round { color: #D69E2E; }
+
+    /* Overview CSS bars */
+    .ov-bar-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+    .ov-bar-row:last-of-type { margin-bottom: 0; }
+    .ov-bar-label { font-size: 11px; color: var(--text); width: 110px; flex-shrink: 0; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ov-bar-track { flex: 1; height: 14px; display: flex; border-radius: 3px; overflow: hidden; background: var(--border); }
+    .ov-bar-seg { height: 100%; transition: width 0.3s; }
+    .ov-bar-amt { font-size: 10px; font-weight: 600; color: var(--primary); min-width: 44px; text-align: right; flex-shrink: 0; }
+    .ov-avg-line {
+      position: absolute; top: 0; bottom: 0; width: 0;
+      border-left: 3px dashed var(--important); opacity: 0.7;
+      pointer-events: none;
+    }
+    .ov-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; justify-content: center; }
+    .ov-legend-item { display: flex; align-items: center; gap: 3px; font-size: 10px; color: var(--text-muted); }
+    .ov-legend-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+
+    .ov-exp-toggle { display: flex; gap: 4px; margin-bottom: 10px; }
+    .ov-exp-toggle-btn {
+      flex: 1; padding: 6px 0; border: none; border-radius: 6px; font-size: 12px; font-weight: 600;
+      cursor: pointer; background: transparent; color: var(--text-muted); transition: all 0.2s;
+    }
+    .ov-exp-toggle-btn.active { background: var(--primary); color: white; }
+
+    .bar-tip {
+      position: absolute; z-index: 150;
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 8px; padding: 8px 12px;
+      font-size: 12px; color: var(--text);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      transform: translateX(-50%);
+      pointer-events: none;
+    }
+    .bar-tip-row { display: flex; align-items: center; gap: 6px; padding: 2px 0; }
+
+    /* Calendar Heatmap */
+    .cal-grid { display: flex; flex-direction: column; gap: 2px; }
+    .cal-row { display: flex; align-items: center; gap: 2px; }
+    .cal-year { font-size: 10px; font-weight: 500; color: var(--text); width: 30px; flex-shrink: 0; text-align: right; padding-right: 4px; }
+    .cal-month-hdr { font-size: 9px; color: var(--text); text-align: center; flex: 1; }
+    .cal-cell {
+      flex: 1; border-radius: 3px;
+      background: var(--border); cursor: default;
+      height: 22px; display: flex; align-items: center; justify-content: center; gap: 1px;
+    }
+    .cal-filled { cursor: pointer; background: transparent; }
+    .cal-filled:active { opacity: 0.7; }
+    .cal-flag { height: 14px; width: 20px; border-radius: 2px; object-fit: cover; }
+    .cal-dot { width: 14px; height: 10px; border-radius: 2px; }
+    .cal-legend {
+      display: flex; align-items: center; justify-content: center;
+      gap: 3px; margin-top: 8px;
+    }
+    .cal-legend-label { font-size: 9px; color: var(--text-muted); }
+
+    /* Skeleton */
+    .skeleton {
+      background: linear-gradient(90deg, var(--border) 25%, var(--bg) 50%, var(--border) 75%);
+      background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 4px;
+    }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    .skeleton-row { display: flex; gap: 12px; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--border); }
+    .skeleton-line { flex: 1; height: 14px; }
+    .skeleton-line-short { width: 50%; height: 12px; }
+    .skeleton-line-xs { width: 30%; height: 10px; }
+
+    /* Toast */
+    .update-toast {
+      text-align: center; font-size: 12px; font-weight: 500;
+      max-height: 0; opacity: 0; overflow: hidden;
+      transition: all 0.3s ease; color: white;
+    }
+    .update-toast.show { max-height: 32px; opacity: 1; padding: 7px 12px; }
+    .update-toast.success { background: var(--positive); }
+    .update-toast.error { background: #E53E3E; }
+    .update-toast.warning { background: #D69E2E; }
+    .update-toast.info { background: #4A5568; }
+
+    /* Sync indicator */
+    .sync-status { display: none; margin-right: 4px; }
+    .sync-spin { font-size: 18px; color: var(--text-muted); animation: spin 1s linear infinite; }
+
+    /* Loading */
+    .loading-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.3); z-index: 250;
+      align-items: center; justify-content: center;
+    }
+    .loading-overlay.active { display: flex; }
+    .loading-spinner {
+      width: 40px; height: 40px;
+      border: 3px solid rgba(255,255,255,0.3); border-top-color: white;
+      border-radius: 50%; animation: spin 0.8s linear infinite;
+    }
+
+    /* Swipe-to-reveal actions */
+    .swipe-container { position: relative; overflow: hidden; }
+    .swipe-content {
+      position: relative; z-index: 1; background: var(--card-bg);
+      transition: transform 0.2s ease;
+    }
+    .swipe-actions {
+      position: absolute; right: 0; top: 0; bottom: 0;
+      display: flex; align-items: stretch;
+    }
+    .swipe-btn {
+      display: flex; align-items: center; justify-content: center;
+      width: 44px; border: none; cursor: pointer;
+      color: white;
+    }
+    .swipe-btn .material-icons-round { font-size: 18px; }
+    .swipe-btn-edit { background: var(--primary); }
+    .swipe-btn-delete { background: var(--important); }
+
+    /* Form Modal (bottom sheet) */
+    .form-modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+      z-index: 200; align-items: flex-end; justify-content: center;
+    }
+    .form-modal-overlay.active { display: flex; }
+    .form-modal {
+      background: var(--card-bg); border-radius: 16px 16px 0 0;
+      width: 100%; max-width: 600px; max-height: 85vh; overflow-y: auto;
+      padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+    .form-modal-header {
+      padding: 16px; font-weight: 600; font-size: 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+      position: sticky; top: 0; background: var(--card-bg); z-index: 1;
+    }
+    .form-modal-body { padding: 14px; }
+    .form-group { margin-bottom: 10px; }
+    .form-label {
+      font-size: 12px; font-weight: 500; color: var(--text-muted);
+      margin-bottom: 4px; display: block;
+    }
+    .form-input, .form-select {
+      width: 100%; padding: 8px 10px; border: 1px solid var(--input-border);
+      border-radius: 8px; font-size: 14px; font-family: inherit;
+      background: var(--input-bg); color: var(--text);
+      -webkit-appearance: none; box-sizing: border-box;
+    }
+    .form-input:focus, .form-select:focus {
+      outline: none; border-color: var(--primary); background: var(--input-focus-bg);
+    }
+    .form-input::placeholder { color: var(--input-placeholder); }
+    .form-input.form-input-tall { min-height: 56px; }
+    .form-row { display: flex; gap: 8px; }
+    .form-row .form-group { flex: 1; min-width: 0; }
+    .form-rate {
+      font-size: 11px; color: var(--text-muted); margin-top: -6px; margin-bottom: 10px;
+    }
+    .form-input-prefix {
+      position: relative;
+    }
+    .form-input-prefix .form-prefix {
+      position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+      font-size: 13px; font-weight: 600; color: var(--text-light); pointer-events: none;
+    }
+    .form-input-prefix .form-prefix.material-icons-round {
+      font-size: 16px; font-weight: 400;
+    }
+    .form-input-prefix .form-input,
+    .form-input-prefix .form-select {
+      padding-left: 30px; padding-right: 28px;
+    }
+    .form-clear {
+      position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+      width: 18px; height: 18px; border-radius: 50%;
+      background: var(--border); color: var(--text-muted);
+      border: none; cursor: pointer; display: none;
+      font-size: 12px; line-height: 18px; text-align: center; padding: 0;
+    }
+    .form-input-prefix .form-input:not(:placeholder-shown) ~ .form-clear {
+      display: block;
+    }
+    .form-input-prefix .form-input[type="time"] ~ .form-clear,
+    .form-input-prefix .form-input[type="date"] ~ .form-clear {
+      display: none !important;
+    }
+    .form-input-prefix .form-input[type="time"],
+    .form-input-prefix .form-input[type="date"] {
+      padding-right: 10px;
+    }
+    .form-btn {
+      width: 100%; padding: 12px; border: none; border-radius: 10px;
+      font-size: 14px; font-weight: 600; font-family: inherit;
+      cursor: pointer; margin-top: 8px;
+    }
+    .form-btn-primary { background: var(--primary); color: white; }
+    .form-btn-primary:disabled { opacity: 0.5; cursor: default; }
+    .form-btn-delete {
+      background: none; color: var(--important); margin-top: 12px;
+      border: 1px solid var(--important); border-radius: 10px;
+    }
+    .form-toggle {
+      display: flex; align-items: center; gap: 8px; cursor: pointer;
+      font-size: 14px; color: var(--text);
+    }
+    .form-toggle .material-icons-round { font-size: 22px; color: var(--text-muted); }
+    .form-toggle.active .material-icons-round { color: var(--important); }
+
+    /* Confirm dialog */
+    .confirm-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+      z-index: 300; align-items: center; justify-content: center;
+    }
+    .confirm-overlay.active { display: flex; }
+    .confirm-dialog {
+      background: var(--card-bg); border-radius: 12px; padding: 20px;
+      max-width: 300px; width: 90%; text-align: center;
+    }
+    .confirm-dialog-msg { font-size: 14px; margin-bottom: 16px; }
+    .confirm-dialog-btns { display: flex; gap: 8px; }
+    .confirm-dialog-btns button {
+      flex: 1; padding: 10px; border-radius: 8px; border: none;
+      font-size: 14px; font-weight: 500; font-family: inherit; cursor: pointer;
+    }
+    .confirm-cancel { background: var(--border); color: var(--text); }
+    .confirm-delete { background: var(--important); color: white; }
+
+    /* Section title add button */
+    .section-title-add {
+      margin-left: 8px; width: 22px; height: 22px; border-radius: 50%;
+      background: var(--primary-lighter); color: var(--primary);
+      border: none; cursor: pointer; display: inline-flex;
+      align-items: center; justify-content: center; flex-shrink: 0;
+      font-size: 16px; line-height: 1; vertical-align: middle;
+    }
+    .section-title-add .material-icons-round { font-size: 16px; }
+
+    /* Settings */
+    .settings-section { padding: 4px 0; }
+    .settings-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; border-bottom: 1px solid var(--border);
+    }
+    .settings-row-icon { font-size: 20px; color: var(--primary); flex-shrink: 0; }
+    .settings-row-label { flex: 1; font-size: 14px; }
+    .settings-input {
+      width: 70px; padding: 6px 8px; border-radius: 8px;
+      border: 1px solid var(--border); background: var(--bg);
+      color: var(--text); font-size: 14px; text-align: center;
+      text-transform: uppercase;
+    }
+    .settings-home-btn {
+      width: 32px; height: 32px; border-radius: 8px; border: none;
+      background: transparent; color: var(--text-muted); cursor: pointer;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .settings-home-btn .material-icons-round { font-size: 20px; }
+    .settings-home-btn.active { color: var(--primary); background: var(--primary-lighter); }
+    .settings-toggle {
+      width: 32px; height: 32px; border-radius: 8px; border: none;
+      background: transparent; color: var(--text-muted); cursor: pointer;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .settings-toggle .material-icons-round { font-size: 20px; }
+    .settings-toggle.private { color: var(--primary); background: var(--primary-lighter); }
+</style>
+
+
+<script>
+// Static PWA API wrapper — replaces google.script.run
+var GAS_API_URL = 'https://script.google.com/macros/s/AKfycbyLay2B_PaztGkmYYPbhlJi-U3H7c5BUcIhi1yQSCUWjqYSRfzWwh3j6bNNv9h1YphcqQ/exec';
+
+// Wrap google.script.run pattern into fetch calls
+var google = { script: { run: null } };
+
+(function() {
+  function createRunner() {
+    var _success = function(){};
+    var _failure = function(e){ console.error('API error:', e); };
+
+    var runner = {
+      withSuccessHandler: function(fn) { _success = fn; return runner; },
+      withFailureHandler: function(fn) { _failure = fn; return runner; }
+    };
+
+    // Create a proxy that intercepts any method call
+    return new Proxy(runner, {
+      get: function(target, prop) {
+        if (prop === 'withSuccessHandler' || prop === 'withFailureHandler') {
+          return target[prop];
+        }
+        // Any other property access is a GAS function call
+        return function() {
+          var args = Array.prototype.slice.call(arguments);
+          var apikey = localStorage.getItem('traveller_apikey') || '';
+
+          // Map function name + args to action + params
+          var params = mapArgsToParams(prop, args);
+
+          fetch(GAS_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify({ apikey: apikey, action: prop, params: params }),
+            redirect: 'follow'
+          })
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            if (data && data.error) {
+              _failure(data.error);
+            } else {
+              _success(data);
+            }
+          })
+          .catch(function(err) {
+            // If offline, try to use cached data for reads
+            if (!navigator.onLine && prop === 'getAppData') {
+              var cached = localStorage.getItem('traveller_data');
+              if (cached) {
+                try { _success(JSON.parse(cached)); return; } catch(e) {}
+              }
+            }
+            _failure(err);
+          });
+        };
+      }
+    });
+  }
+
+  // Map positional args to named params based on function signature
+  function mapArgsToParams(action, args) {
+    var signatures = {
+      getAppData: [],
+      getSettings: [],
+      saveSettings: ['settings'],
+      toggleCheck: ['sheetRow', 'value'],
+      setImportance: ['sheetRow', 'value'],
+      togglePostcard: ['sheetRow', 'value'],
+      toggleImportant: ['sheetRow', 'value'],
+      editTrip: ['sheetRow', 'trip', 'start', 'end', 'flag', 'currency', 'exchangeRate', 'visible', 'map'],
+      deleteTrip: ['tripName'],
+      renameTrip: ['oldName', 'newName'],
+      createTrip: ['trip', 'start', 'end', 'flag', 'currency', 'exchangeRate', 'map'],
+      addFlight: ['trip', 'date', 'departure', 'origin', 'arrival', 'destination', 'duration', 'flightNo', 'bookingRef', 'airline'],
+      editFlight: ['sheetRow', 'date', 'departure', 'origin', 'arrival', 'destination', 'duration', 'flightNo', 'bookingRef', 'airline'],
+      deleteFlight: ['sheetRow'],
+      addPlan: ['trip', 'date', 'itinerary', 'attractions', 'distance', 'ascent', 'accommodation', 'localCost', 'hkCost', 'url', 'note'],
+      editDayPlan: ['sheetRow', 'date', 'itinerary', 'attractions', 'distance', 'ascent', 'accommodation', 'localCost', 'hkCost', 'url', 'note'],
+      deleteDayPlan: ['sheetRow'],
+      addAccommodation: ['trip', 'date', 'accommodation', 'localCost', 'hkCost', 'url', 'note'],
+      deleteAccommodation: ['sheetRow'],
+      addItinerary: ['trip', 'date', 'start', 'end', 'duration', 'event', 'detail', 'localCost', 'hkCost', 'url', 'important'],
+      editItinerary: ['sheetRow', 'date', 'start', 'end', 'duration', 'event', 'detail', 'localCost', 'hkCost', 'url', 'important'],
+      deleteItinerary: ['sheetRow'],
+      addExpense: ['trip', 'date', 'category', 'item', 'hkCost', 'localCost', 'remark'],
+      editExpense: ['sheetRow', 'date', 'category', 'item', 'hkCost', 'localCost', 'remark'],
+      deleteExpense: ['sheetRow'],
+      addInfo: ['trip', 'item', 'url'],
+      editInfo: ['sheetRow', 'item', 'url'],
+      deleteInfo: ['sheetRow'],
+      addChecklistItem: ['category', 'item', 'importance', 'amount', 'remarks'],
+      editChecklistItem: ['sheetRow', 'category', 'item', 'importance', 'amount', 'remarks'],
+      deleteChecklistItem: ['sheetRow'],
+      addPostcardItem: ['name', 'address'],
+      editPostcardItem: ['sheetRow', 'name', 'address'],
+      deletePostcardItem: ['sheetRow'],
+      regenerateApiKey: [],
+    };
+
+    var paramNames = signatures[action];
+    if (!paramNames) {
+      // Unknown function — pass args as array
+      return { args: args };
+    }
+
+    var params = {};
+    paramNames.forEach(function(name, i) {
+      if (i < args.length) params[name] = args[i];
+    });
+    return params;
+  }
+
+  // Override google.script.run with a getter that creates a new runner each time
+  Object.defineProperty(google.script, 'run', {
+    get: function() { return createRunner(); }
+  });
+})();
+</script>
+
+</head>
+<body>
+
+<!-- Form Modal (bottom sheet) -->
+<div id="formModal" class="form-modal-overlay" onclick="if(event.target===this)closeFormModal()">
+  <div class="form-modal">
+    <div class="form-modal-header">
+      <span id="formModalTitle">Add</span>
+      <button class="icon-btn" onclick="closeFormModal()" style="background:var(--bg);color:var(--text);width:28px;height:28px;">
+        <span class="material-icons-round" style="font-size:18px;">close</span>
+      </button>
+    </div>
+    <div class="form-modal-body" id="formModalBody"></div>
+  </div>
+</div>
+
+<!-- Picker Modal (stacks on top of form modal) -->
+<div id="pickerModal" class="form-modal-overlay" style="z-index:210;" onclick="if(event.target===this)closePickerModal()">
+  <div class="form-modal">
+    <div class="form-modal-header">
+      <span id="pickerModalTitle">Pick</span>
+      <button class="icon-btn" onclick="closePickerModal()" style="background:var(--bg);color:var(--text);width:28px;height:28px;">
+        <span class="material-icons-round" style="font-size:18px;">close</span>
+      </button>
+    </div>
+    <div class="form-modal-body" id="pickerModalBody"></div>
+  </div>
+</div>
+
+<!-- Confirm Dialog -->
+<div id="confirmDialog" class="confirm-overlay" onclick="if(event.target===this)closeConfirm()">
+  <div class="confirm-dialog">
+    <div class="confirm-dialog-msg" id="confirmMsg">Are you sure?</div>
+    <div class="confirm-dialog-btns">
+      <button class="confirm-cancel" onclick="closeConfirm()">Cancel</button>
+      <button class="confirm-delete" id="confirmAction" onclick="">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Trip Selector Modal -->
+<div id="tripModal" class="trip-modal-overlay" onclick="if(event.target===this)closeTripModal()">
+  <div class="trip-modal">
+    <div class="trip-modal-header">
+      <span>Select Trip</span>
+      <button class="icon-btn" onclick="closeTripModal()" style="background:var(--bg);color:var(--text);width:28px;height:28px;">
+        <span class="material-icons-round" style="font-size:18px;">close</span>
+      </button>
+    </div>
+    <div id="tripModalList"></div>
+  </div>
+</div>
+
+<!-- App -->
+<div id="app">
+  <!-- Header -->
+  <header class="header">
+    <div class="header-left">
+      <button class="icon-btn" onclick="switchTab('settings')">
+        <span class="material-icons-round">settings</span>
+      </button>
+    </div>
+    <div class="header-center" onclick="goHome()">
+      <div class="header-title">
+        <img src="https://cdn-icons-png.flaticon.com/512/5219/5219577.png" alt="Traveller" class="header-logo">
+        <span>Traveller</span>
+      </div>
+      <div class="header-subtitle" id="headerTripName"></div>
+    </div>
+    <div class="header-right">
+      <span class="sync-status" id="syncStatus"></span>
+      <button class="icon-btn" id="headerAddBtn" onclick="onHeaderAdd()" style="display:none;">
+        <span class="material-icons-round">add</span>
+      </button>
+      <button class="icon-btn" id="refreshBtn" onclick="refreshData()">
+        <span class="material-icons-round">refresh</span>
+      </button>
+    </div>
+  </header>
+  <div id="updateToast" class="update-toast"></div>
+
+  <!-- Day Anchor Nav (only shown in Itinerary tab) -->
+  <div class="sub-nav" id="dayNav" style="display:none;"></div>
+  <!-- Overview Sub-Nav (only shown in Overview tab) -->
+  <div class="sub-nav" id="overviewNav" style="display:none;">
+    <div class="sub-nav-item active" data-section="dashboard" onclick="switchOverviewSection('dashboard')">Dashboard</div>
+    <div class="sub-nav-item" data-section="checklist" onclick="switchOverviewSection('checklist')">Checklist<span class="sub-nav-badge" id="checklistBadge">0</span></div>
+    <div class="sub-nav-item" data-section="postcard" onclick="switchOverviewSection('postcard')">Postcard<span class="sub-nav-badge" id="postcardBadge">0</span></div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main">
+    <div class="content-container">
+
+      <!-- Skeleton -->
+      <div id="skeleton">
+        <div class="card">
+          <div class="skeleton-row"><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line-short"></div></div>
+          <div class="skeleton-row"><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line-xs"></div></div>
+          <div class="skeleton-row"><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line-short"></div></div>
+          <div class="skeleton-row"><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line-xs"></div></div>
+          <div class="skeleton-row"><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line-short"></div></div>
+          <div class="skeleton-row"><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line-xs"></div></div>
+        </div>
+      </div>
+
+      <!-- Tab: Overview -->
+      <div id="tabOverview" class="tab-content" style="display:none;">
+        <!-- Dashboard section -->
+        <div id="overviewDashboard" class="overview-section">
+          <div class="section-title"><span class="material-icons-round">calendar_month</span> Travel Calendar<span class="section-title-badge" id="ovCalBadge"></span></div>
+          <div class="card card-padded-sm" id="calendarHeatmap"></div>
+          <div class="section-title"><span class="material-icons-round">attach_money</span> Expenses<span class="section-title-badge" id="ovExpBadge"></span></div>
+          <div class="card card-padded">
+            <div class="ov-exp-toggle">
+              <button class="ov-exp-toggle-btn active" onclick="switchExpChart('total')">Total</button>
+              <button class="ov-exp-toggle-btn" onclick="switchExpChart('daily')">Daily</button>
+            </div>
+            <div id="tripExpBars"></div>
+            <div id="dailyExpBars" style="display:none;"></div>
+          </div>
+          <div class="section-title"><span class="material-icons-round">donut_large</span> Category Breakdown</div>
+          <div class="card card-padded">
+            <canvas id="donutChart"></canvas>
+          </div>
+        </div>
+        <!-- Checklist section -->
+        <div id="overviewChecklist" class="overview-section" style="display:none;">
+          <div id="checkList">
+            <div class="card"><div class="skeleton-row"><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line-short"></div></div><div class="skeleton-row"><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line-xs"></div></div></div>
+          </div>
+        </div>
+        <!-- Postcard section -->
+        <div id="overviewPostcard" class="overview-section" style="display:none;">
+          <div id="postcardList">
+            <div class="card"><div class="skeleton-row"><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line-short"></div></div><div class="skeleton-row"><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line-xs"></div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Trip -->
+      <div id="tabTrip" class="tab-content" style="display:none;">
+        <div class="trip-selector card" id="tripSelector">
+          <div style="flex:1;display:flex;align-items:center;gap:10px;" onclick="openTripModal()">
+            <img id="tripFlag" class="trip-selector-flag" src="" alt="">
+            <div class="trip-selector-info">
+              <div class="trip-selector-name" id="tripName">-</div>
+              <div class="trip-selector-meta" id="tripMeta">-</div>
+            </div>
+            <span class="material-icons-round" style="color:var(--text-muted);">expand_more</span>
+          </div>
+          <span class="material-icons-round owner-only" style="color:var(--text-muted);font-size:18px;padding:4px;cursor:pointer;" onclick="event.stopPropagation();openTripEditForm()">edit</span>
+        </div>
+        <div id="flightsContent"></div>
+        <div id="infoContent"></div>
+      </div>
+
+      <!-- Tab: Itinerary -->
+      <div id="tabItinerary" class="tab-content" style="display:none;">
+        <div id="daysContent"></div>
+      </div>
+
+      <!-- Tab: Expenses -->
+      <div id="tabExpenses" class="tab-content" style="display:none;">
+        <div id="expSummary"></div>
+        <div id="expList"></div>
+      </div>
+
+      <!-- Tab: Map -->
+      <div id="tabMap" class="tab-content" style="display:none;">
+        <div id="mapContainer"></div>
+      </div>
+
+
+      <div id="tabSettings" class="tab-content" style="display:none;">
+        <div id="settingsContent"></div>
+        <div id="settingsLock" style="display:none;"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Bottom Tab Bar -->
+  <div class="bottom-tabs">
+    <button class="bottom-tab" onclick="switchTab('overview')">
+      <span class="material-icons-round">insights</span>
+      <span>Overview</span>
+    </button>
+    <button class="bottom-tab" onclick="switchTab('trip')">
+      <span class="material-icons-round">public</span>
+      <span>Trip</span>
+    </button>
+    <button class="bottom-tab" onclick="switchTab('itinerary')">
+      <span class="material-icons-round">event_note</span>
+      <span>Itinerary</span>
+    </button>
+    <button class="bottom-tab" onclick="switchTab('map')">
+      <span class="material-icons-round">map</span>
+      <span>Map</span>
+    </button>
+    <button class="bottom-tab" onclick="switchTab('expenses')">
+      <span class="material-icons-round">attach_money</span>
+      <span>Expenses</span>
+    </button>
+  </div>
+</div>
+
+<!-- Shared State -->
+<script>
+var appData = null;
+var selectedTrip = '';
+var currentTrip = null;
+var currentPlans = [];
+var currency = '';
+var _initHash = (location.hash ? location.hash.replace('#', '') : '') || '';
+var activeTab = _initHash.indexOf('overview') === 0 ? 'overview' : _initHash;
+// activeExtrasSection removed — now using _overviewSection in overview.html
+var isOwner = false;
+</script>
+
+<!-- Split JS modules -->
+<script>
+// ===== Shared State =====
+var _itinTodayIdx = -1;
+
+// ===== Shared Constants =====
+var catColors = {
+  'Flight': '#6366F1', 'Accommodation': '#0891B2', 'Food': '#F59E0B',
+  'Explore': '#10B981', 'Shop': '#EC4899', 'Transport': '#8B5CF6', 'Others': '#94A3B8'
+};
+var catIcons = {
+  'Flight': 'flight', 'Transport': 'directions_transit', 'Food': 'restaurant',
+  'Shop': 'shopping_bag', 'Explore': 'explore', 'Accommodation': 'hotel', 'Others': 'more_horiz'
+};
+var catIconUnicode = {
+  'Flight': '\ue539', 'Transport': '\ue535', 'Food': '\ue56c',
+  'Shop': '\uf1cc', 'Explore': '\ue87a', 'Accommodation': '\ue53a', 'Others': '\ue5d3'
+};
+var _allCatNames = ['Flight', 'Accommodation', 'Food', 'Explore', 'Shop', 'Transport', 'Others'];
+
+// ===== Toast (inline banner below header) =====
+var _toastTimer = null;
+var _pendingOps = 0;
+
+function showToast(msg, type) {
+  type = type || 'info';
+  var t = document.getElementById('updateToast');
+  t.textContent = msg;
+  t.className = 'update-toast ' + type + ' show';
+  if (_toastTimer) clearTimeout(_toastTimer);
+  var dur = type === 'error' ? 0 : (type === 'warning' ? 3000 : 2000);
+  if (dur > 0) {
+    _toastTimer = setTimeout(function() { t.classList.remove('show'); _toastTimer = null; }, dur);
+  }
+}
+function crudToast(action, entity) { showToast(entity + ' ' + action, 'success'); }
+function failToast(err, action) {
+  var msg = action ? 'Failed to ' + action : 'Failed';
+  if (err && (err.message || typeof err === 'string')) msg += ': ' + (err.message || err);
+  showToast(msg, 'error');
+}
+function warnToast(msg) { showToast(msg, 'warning'); }
+
+function clearToast() {
+  var t = document.getElementById('updateToast');
+  t.classList.remove('show');
+  if (_toastTimer) { clearTimeout(_toastTimer); _toastTimer = null; }
+}
+
+// Sync tracking
+function startSync() {
+  _pendingOps++;
+  updateSyncStatus();
+}
+
+function endSync(success) {
+  _pendingOps = Math.max(0, _pendingOps - 1);
+  updateSyncStatus();
+}
+
+function updateSyncStatus() {
+  var el = document.getElementById('syncStatus');
+  if (!el) return;
+  if (_pendingOps > 0) {
+    el.innerHTML = '<span class="material-icons-round sync-spin">sync</span>';
+    el.style.display = '';
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+// ===== Helpers =====
+function esc(s) { if (!s) return ''; var d = document.createElement('div'); d.textContent = s.toString(); return d.innerHTML; }
+function escAttr(s) { return esc(s).replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+
+function formatDateShort(d) {
+  if (!d) return '';
+  var date = new Date(d);
+  if (isNaN(date)) return d.toString();
+  return (date.getMonth() + 1) + '/' + date.getDate();
+}
+
+// Parse any date string into a Date object
+// Handles: "2026-04-08", "4/8(Wed)", "4/8/2026", "4/8", "04/08/2026"
+function parseAnyDate(s, yearHint) {
+  if (!s) return null;
+  s = s.toString().trim();
+  // ISO: 2026-04-08
+  if (s.match(/^\d{4}-\d{2}-\d{2}/)) return new Date(s + 'T00:00:00');
+  // M/D(Day) or M/D/YYYY or M/D
+  var m = s.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{4})|\(|$)/);
+  if (m) {
+    var year = m[3] ? parseInt(m[3]) : (yearHint || new Date().getFullYear());
+    return new Date(year, parseInt(m[1]) - 1, parseInt(m[2]));
+  }
+  // Fallback
+  var d = new Date(s);
+  return isNaN(d) ? null : d;
+}
+
+// Extract just M/D from any date format
+function shortDate(s) {
+  if (!s) return '';
+  var d = parseAnyDate(s);
+  if (d) return (d.getMonth() + 1) + '/' + d.getDate();
+  return s.toString();
+}
+
+// Convert any date to "M/D(Day)" display format
+function displayDate(s) {
+  if (!s) return '';
+  s = s.toString().trim();
+  // Already display format with day name
+  if (s.match(/^\d{1,2}\/\d{1,2}\([A-Z]/i)) return s;
+  var dow = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  var d = parseAnyDate(s);
+  if (d) return (d.getMonth() + 1) + '/' + d.getDate() + '(' + dow[d.getDay()] + ')';
+  return s;
+}
+
+function formatDateRange(a, b) {
+  var d1 = new Date(a), d2 = new Date(b);
+  if (isNaN(d1) || isNaN(d2)) return '';
+  return (d1.getMonth() + 1) + '/' + d1.getDate() + ' - ' + (d2.getMonth() + 1) + '/' + d2.getDate();
+}
+
+function daysBetween(a, b) {
+  var d1 = new Date(a), d2 = new Date(b);
+  if (isNaN(d1) || isNaN(d2)) return 0;
+  return Math.round((d2 - d1) / 86400000) + 1;
+}
+
+function parseCost(val) {
+  if (!val) return 0;
+  return parseFloat(val.toString().replace(/[^0-9.]/g, '')) || 0;
+}
+
+function formatNum(n) {
+  if (!n) return '0';
+  return n.toLocaleString('en', { maximumFractionDigits: 2, minimumFractionDigits: 0 });
+}
+
+function flagUrl(currency) {
+  var map = {
+    'JPY': 'jp', 'NZD': 'nz', 'AUD': 'au', 'EUR': 'eu',
+    'USD': 'us', 'GBP': 'gb', 'KRW': 'kr', 'TWD': 'tw',
+    'CNY': 'cn', 'THB': 'th', 'HKD': 'hk', 'SGD': 'sg',
+    'MYR': 'my', 'PHP': 'ph', 'IDR': 'id', 'VND': 'vn',
+    'INR': 'in', 'CAD': 'ca', 'CHF': 'ch'
+  };
+  var code = (currency || '').replace(/[^A-Z]/g, '');
+  var cc = map[code] || '';
+  return cc ? 'https://flagcdn.com/w80/' + cc + '.png' : '';
+}
+
+function formatTime(t) {
+  if (!t) return '';
+  var s = t.toString();
+  if (s.includes('T') || s.includes('GMT')) {
+    var d = new Date(t);
+    if (!isNaN(d)) {
+      var h = d.getHours(), m = d.getMinutes();
+      return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
+    }
+  }
+  // Pad simple time like "5:40" to "05:40" for input[type=time]
+  var parts = s.split(':');
+  if (parts.length === 2) {
+    var hh = ('0' + parts[0].trim()).slice(-2);
+    var mm = ('0' + parts[1].trim()).slice(-2);
+    return hh + ':' + mm;
+  }
+  return s;
+}
+
+function timeToMin(t) {
+  var s = formatTime(t);
+  var p = s.split(':');
+  if (p.length < 2) return 9999;
+  return parseInt(p[0]) * 60 + parseInt(p[1]);
+}
+
+// Convert display date like "4/8(Wed)" to ISO "2026-04-08" using trip year
+function displayDateToISO(dateStr, tripStart) {
+  if (!dateStr) return '';
+  var s = dateStr.toString().trim();
+  // Already ISO
+  if (s.match(/^\d{4}-\d{2}-\d{2}/)) return s.slice(0, 10);
+  var yearHint = tripStart ? new Date(tripStart).getFullYear() : new Date().getFullYear();
+  var d = parseAnyDate(s, yearHint);
+  if (!d) return '';
+  return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+}
+
+// Today as ISO string
+function todayISO() {
+  var d = new Date();
+  return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+}
+
+// Check if a date string matches today
+function isToday(dateStr) {
+  if (!dateStr) return false;
+  var today = todayISO();
+  var iso = displayDateToISO(dateStr, currentTrip ? currentTrip.start : null);
+  return iso === today;
+}
+
+// Get current time as HH:MM
+function nowTime() {
+  var d = new Date();
+  return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+}
+
+// Default date for forms — today if within trip range, otherwise trip start
+function defaultFormDate() {
+  if (!currentTrip) return todayISO();
+  var today = todayISO();
+  var dr = tripDateRange();
+  if (today >= dr.min && today <= dr.max) return today;
+  return currentTrip.start || dr.min;
+}
+
+// Form validation — returns true if valid, shows toast if not
+function validateForm(rules) {
+  for (var i = 0; i < rules.length; i++) {
+    var r = rules[i];
+    var el = document.getElementById(r.id);
+    var val = el ? el.value.trim() : '';
+    if (r.required && !val) { warnToast(r.label + ' is required'); if (el) el.focus(); return false; }
+    if (r.numeric && val && isNaN(parseFloat(val))) { warnToast(r.label + ' must be a number'); if (el) el.focus(); return false; }
+  }
+  return true;
+}
+
+function _copyText(text, label) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text)
+      .then(function() { showToast(label + ' copied', 'info'); })
+      .catch(function() { _copyFallback(text, label); });
+  } else {
+    _copyFallback(text, label);
+  }
+}
+function _copyFallback(text, label) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;left:-9999px;';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); showToast(label + ' copied', 'info'); }
+  catch(e) { warnToast('Copy failed'); }
+  document.body.removeChild(ta);
+}
+
+function copyAddress(addr) {
+  _copyText(addr, 'Address');
+}
+</script>
+
+<script>
+var _closingPicker = false;
+var _confirmCallback = null;
+var _formCallback = null;
+
+// ===== Cost Helpers =====
+function cleanCostInput(el) {
+  el.value = el.value.replace(/[^0-9.]/g, '');
+}
+
+function tripDateRange() {
+  if (!currentTrip) return { min: '', max: '' };
+  var s = new Date(currentTrip.start);
+  var e = new Date(currentTrip.end);
+  s.setDate(s.getDate() - 1);
+  e.setDate(e.getDate() + 1);
+  return {
+    min: s.getFullYear() + '-' + ('0' + (s.getMonth() + 1)).slice(-2) + '-' + ('0' + s.getDate()).slice(-2),
+    max: e.getFullYear() + '-' + ('0' + (e.getMonth() + 1)).slice(-2) + '-' + ('0' + e.getDate()).slice(-2)
+  };
+}
+
+// ===== Form Helpers =====
+// Build an input with icon prefix: fld('event', 'id', 'date', val, 'placeholder')
+function fld(icon, id, type, val, ph, extra) {
+  var isSelect = type === 'select';
+  var cls = isSelect ? 'form-select' : 'form-input';
+  var iconIsText = icon.length <= 2 || icon.includes('$');
+  var prefixCls = iconIsText ? 'form-prefix' : 'form-prefix material-icons-round';
+  var inp;
+  if (isSelect) {
+    inp = '<select class="' + cls + '" id="' + id + '"' + (extra || '') + '>' + (val || '') + '</select>';
+  } else if (type === 'time' || type === 'date') {
+    // Use text initially so placeholder shows, switch to date/time on focus
+    var actualType = type;
+    var inputType = val ? actualType : 'text';
+    inp = '<input class="' + cls + '" id="' + id + '" type="' + inputType + '" value="' + escAttr(val || '') + '"' +
+      (ph ? ' placeholder="' + escAttr(ph) + '"' : '') +
+      ' onfocus="if(this.type!==\'' + actualType + '\'){this.type=\'' + actualType + '\';var s=this;setTimeout(function(){try{s.showPicker()}catch(e){s.click()}},50);}"' +
+      ' onblur="if(!this.value)this.type=\'text\'"' +
+      (extra || '') + '>';
+  } else {
+    var placeholder = ph || ' ';
+    inp = '<input class="' + cls + '" id="' + id + '"' + (type ? ' type="' + type + '"' : '') + ' value="' + escAttr(val || '') + '" placeholder="' + escAttr(placeholder) + '"' + (extra || '') + '>';
+  }
+  var clearBtn = (!isSelect && type !== 'time' && type !== 'date') ? '<button class="form-clear" type="button" onclick="var i=this.previousElementSibling;i.value=\'\';i.focus();i.dispatchEvent(new Event(\'input\'));">&times;</button>' : '';
+  return '<div class="form-group"><div class="form-input-prefix">' +
+    '<span class="' + prefixCls + '">' + icon + '</span>' +
+    inp + clearBtn + '</div></div>';
+}
+
+// ===== Form Modal =====
+
+function openFormModal(title, bodyHtml, onSave) {
+  document.getElementById('formModalTitle').textContent = title;
+  document.getElementById('formModalBody').innerHTML = bodyHtml;
+  _formCallback = onSave;
+  document.getElementById('formModal').classList.add('active');
+  // Push state so back button closes the form
+  history.pushState({ formOpen: true }, '');
+}
+
+function setFormSaving(saving) {
+  var btns = document.querySelectorAll('#formModalBody .form-btn-primary');
+  btns.forEach(function(btn) {
+    if (saving) {
+      btn.dataset.origText = btn.textContent;
+      btn.textContent = 'Saving...';
+      btn.disabled = true;
+      btn.style.opacity = '0.6';
+    } else {
+      btn.textContent = btn.dataset.origText || 'Save';
+      btn.disabled = false;
+      btn.style.opacity = '';
+    }
+  });
+}
+
+function closeFormModal() {
+  setFormSaving(false);
+  document.getElementById('formModal').classList.remove('active');
+  _formCallback = null;
+  // Pop the form state if it's still there
+  if (history.state && history.state.formOpen) {
+    history.back();
+  }
+}
+
+// Close modals on back button — close top layer first
+window.addEventListener('popstate', function(e) {
+  // If we're programmatically closing the picker, don't cascade
+  if (_closingPicker) return;
+
+  // Picker modal (topmost z-index 210)
+  var picker = document.getElementById('pickerModal');
+  if (picker && picker.classList.contains('active')) {
+    picker.classList.remove('active');
+    return; // don't close anything else
+  }
+  // Confirm dialog
+  var confirm = document.getElementById('confirmDialog');
+  if (confirm && confirm.classList.contains('active')) {
+    confirm.classList.remove('active');
+    _confirmCallback = null;
+    return;
+  }
+  // Form modal
+  var modal = document.getElementById('formModal');
+  if (modal && modal.classList.contains('active')) {
+    modal.classList.remove('active');
+    _formCallback = null;
+    return;
+  }
+  // Trip modal
+  var tripModal = document.getElementById('tripModal');
+  if (tripModal && tripModal.classList.contains('active')) {
+    tripModal.classList.remove('active');
+  }
+});
+
+function submitForm() {
+  if (_formCallback) _formCallback();
+}
+
+// ===== Confirm Dialog =====
+
+function showConfirm(msg, onConfirm) {
+  document.getElementById('confirmMsg').textContent = msg;
+  _confirmCallback = onConfirm;
+  document.getElementById('confirmAction').onclick = function() {
+    var cb = _confirmCallback;
+    closeConfirm();
+    if (cb) cb();
+  };
+  document.getElementById('confirmDialog').classList.add('active');
+}
+
+function closeConfirm() {
+  document.getElementById('confirmDialog').classList.remove('active');
+  _confirmCallback = null;
+}
+
+// ===== Swipe-to-Reveal =====
+var _activeSwipe = null;
+
+function initSwipeRows(container) {
+  if (!isOwner) return;
+  var rows = container.querySelectorAll('.swipe-container');
+  rows.forEach(function(row) {
+    var content = row.querySelector('.swipe-content');
+    var actions = row.querySelector('.swipe-actions');
+    if (!content || !actions) return;
+    var actionsW = actions.scrollWidth || actions.offsetWidth || (actions.children.length * 44);
+    var startX = 0, currentX = 0, dragging = false;
+
+    function onStart(x) {
+      // Close any other open swipe
+      if (_activeSwipe && _activeSwipe !== row) resetSwipe(_activeSwipe);
+      startX = x; dragging = true;
+      content.style.transition = 'none';
+    }
+    function onMove(x) {
+      if (!dragging) return;
+      var dx = x - startX;
+      // Only allow swipe left (negative)
+      if (dx > 0) dx = 0;
+      if (dx < -actionsW) dx = -actionsW;
+      currentX = dx;
+      content.style.transform = 'translateX(' + dx + 'px)';
+    }
+    function onEnd() {
+      if (!dragging) return;
+      dragging = false;
+      content.style.transition = 'transform 0.2s ease';
+      if (currentX < -actionsW / 3) {
+        // Snap open
+        content.style.transform = 'translateX(' + (-actionsW) + 'px)';
+        _activeSwipe = row;
+      } else {
+        // Snap closed
+        content.style.transform = 'translateX(0)';
+        if (_activeSwipe === row) _activeSwipe = null;
+      }
+      currentX = 0;
+    }
+
+    // Touch events
+    content.addEventListener('touchstart', function(e) {
+      onStart(e.touches[0].clientX);
+    }, { passive: true });
+    content.addEventListener('touchmove', function(e) {
+      onMove(e.touches[0].clientX);
+    }, { passive: true });
+    content.addEventListener('touchend', onEnd);
+
+    // Mouse events (desktop)
+    content.addEventListener('mousedown', function(e) {
+      onStart(e.clientX);
+      e.preventDefault();
+    });
+    document.addEventListener('mousemove', function(e) {
+      if (dragging) onMove(e.clientX);
+    });
+    document.addEventListener('mouseup', function() {
+      if (dragging) onEnd();
+    });
+  });
+}
+
+function resetSwipe(row) {
+  if (!row) return;
+  var content = row.querySelector('.swipe-content');
+  if (content) {
+    content.style.transition = 'transform 0.2s ease';
+    content.style.transform = 'translateX(0)';
+  }
+  if (_activeSwipe === row) _activeSwipe = null;
+}
+
+function resetAllSwipes() {
+  if (_activeSwipe) resetSwipe(_activeSwipe);
+}
+
+// Close swipe on tap elsewhere
+document.addEventListener('click', function(e) {
+  if (_activeSwipe && !_activeSwipe.contains(e.target)) {
+    resetSwipe(_activeSwipe);
+  }
+});
+
+// ===== Flag & Currency Pickers =====
+var _allCountries = [
+  {cc:'jp',name:'Japan'},{cc:'kr',name:'South Korea'},{cc:'tw',name:'Taiwan'},{cc:'th',name:'Thailand'},
+  {cc:'vn',name:'Vietnam'},{cc:'sg',name:'Singapore'},{cc:'my',name:'Malaysia'},{cc:'ph',name:'Philippines'},
+  {cc:'id',name:'Indonesia'},{cc:'in',name:'India'},{cc:'cn',name:'China'},{cc:'hk',name:'Hong Kong'},
+  {cc:'au',name:'Australia'},{cc:'nz',name:'New Zealand'},{cc:'us',name:'United States'},{cc:'gb',name:'United Kingdom'},
+  {cc:'ca',name:'Canada'},{cc:'it',name:'Italy'},{cc:'fr',name:'France'},{cc:'de',name:'Germany'},
+  {cc:'es',name:'Spain'},{cc:'pt',name:'Portugal'},{cc:'ch',name:'Switzerland'},{cc:'at',name:'Austria'},
+  {cc:'nl',name:'Netherlands'},{cc:'be',name:'Belgium'},{cc:'se',name:'Sweden'},{cc:'no',name:'Norway'},
+  {cc:'dk',name:'Denmark'},{cc:'fi',name:'Finland'},{cc:'ie',name:'Ireland'},{cc:'gr',name:'Greece'},
+  {cc:'tr',name:'Turkey'},{cc:'cz',name:'Czech Republic'},{cc:'pl',name:'Poland'},{cc:'hu',name:'Hungary'},
+  {cc:'hr',name:'Croatia'},{cc:'ro',name:'Romania'},{cc:'bg',name:'Bulgaria'},{cc:'rs',name:'Serbia'},
+  {cc:'si',name:'Slovenia'},{cc:'sk',name:'Slovakia'},{cc:'ee',name:'Estonia'},{cc:'lv',name:'Latvia'},
+  {cc:'lt',name:'Lithuania'},{cc:'is',name:'Iceland'},{cc:'ru',name:'Russia'},{cc:'ua',name:'Ukraine'},
+  {cc:'ae',name:'UAE'},{cc:'sa',name:'Saudi Arabia'},{cc:'il',name:'Israel'},{cc:'eg',name:'Egypt'},
+  {cc:'za',name:'South Africa'},{cc:'ke',name:'Kenya'},{cc:'ma',name:'Morocco'},
+  {cc:'br',name:'Brazil'},{cc:'mx',name:'Mexico'},{cc:'ar',name:'Argentina'},{cc:'cl',name:'Chile'},
+  {cc:'co',name:'Colombia'},{cc:'pe',name:'Peru'},{cc:'cu',name:'Cuba'},
+  {cc:'mm',name:'Myanmar'},{cc:'kh',name:'Cambodia'},{cc:'la',name:'Laos'},{cc:'np',name:'Nepal'},
+  {cc:'lk',name:'Sri Lanka'},{cc:'bd',name:'Bangladesh'},{cc:'pk',name:'Pakistan'},
+  {cc:'mn',name:'Mongolia'},{cc:'fj',name:'Fiji'},{cc:'mv',name:'Maldives'},
+  {cc:'eu',name:'European Union'}
+];
+
+var _allCurrencies = [
+  {code:'JPY',symbol:'¥',name:'Japanese Yen',cc:'jp'},
+  {code:'KRW',symbol:'₩',name:'Korean Won',cc:'kr'},
+  {code:'TWD',symbol:'$',name:'Taiwan Dollar',cc:'tw'},
+  {code:'THB',symbol:'฿',name:'Thai Baht',cc:'th'},
+  {code:'VND',symbol:'₫',name:'Vietnamese Dong',cc:'vn'},
+  {code:'SGD',symbol:'$',name:'Singapore Dollar',cc:'sg'},
+  {code:'MYR',symbol:'RM',name:'Malaysian Ringgit',cc:'my'},
+  {code:'PHP',symbol:'₱',name:'Philippine Peso',cc:'ph'},
+  {code:'IDR',symbol:'Rp',name:'Indonesian Rupiah',cc:'id'},
+  {code:'INR',symbol:'₹',name:'Indian Rupee',cc:'in'},
+  {code:'CNY',symbol:'¥',name:'Chinese Yuan',cc:'cn'},
+  {code:'HKD',symbol:'$',name:'Hong Kong Dollar',cc:'hk'},
+  {code:'AUD',symbol:'$',name:'Australian Dollar',cc:'au'},
+  {code:'NZD',symbol:'$',name:'New Zealand Dollar',cc:'nz'},
+  {code:'USD',symbol:'$',name:'US Dollar',cc:'us'},
+  {code:'GBP',symbol:'£',name:'British Pound',cc:'gb'},
+  {code:'EUR',symbol:'€',name:'Euro',cc:'eu'},
+  {code:'CAD',symbol:'$',name:'Canadian Dollar',cc:'ca'},
+  {code:'CHF',symbol:'Fr',name:'Swiss Franc',cc:'ch'},
+  {code:'SEK',symbol:'kr',name:'Swedish Krona',cc:'se'},
+  {code:'NOK',symbol:'kr',name:'Norwegian Krone',cc:'no'},
+  {code:'DKK',symbol:'kr',name:'Danish Krone',cc:'dk'},
+  {code:'CZK',symbol:'Kč',name:'Czech Koruna',cc:'cz'},
+  {code:'PLN',symbol:'zł',name:'Polish Zloty',cc:'pl'},
+  {code:'HUF',symbol:'Ft',name:'Hungarian Forint',cc:'hu'},
+  {code:'TRY',symbol:'₺',name:'Turkish Lira',cc:'tr'},
+  {code:'AED',symbol:'د.إ',name:'UAE Dirham',cc:'ae'},
+  {code:'SAR',symbol:'﷼',name:'Saudi Riyal',cc:'sa'},
+  {code:'ILS',symbol:'₪',name:'Israeli Shekel',cc:'il'},
+  {code:'ZAR',symbol:'R',name:'South African Rand',cc:'za'},
+  {code:'BRL',symbol:'R$',name:'Brazilian Real',cc:'br'},
+  {code:'MXN',symbol:'$',name:'Mexican Peso',cc:'mx'},
+  {code:'ARS',symbol:'$',name:'Argentine Peso',cc:'ar'},
+  {code:'CLP',symbol:'$',name:'Chilean Peso',cc:'cl'},
+  {code:'MMK',symbol:'K',name:'Myanmar Kyat',cc:'mm'},
+  {code:'KHR',symbol:'៛',name:'Cambodian Riel',cc:'kh'},
+  {code:'LAK',symbol:'₭',name:'Lao Kip',cc:'la'},
+  {code:'NPR',symbol:'Rs',name:'Nepalese Rupee',cc:'np'},
+  {code:'LKR',symbol:'Rs',name:'Sri Lankan Rupee',cc:'lk'},
+  {code:'FJD',symbol:'$',name:'Fijian Dollar',cc:'fj'},
+  {code:'MVR',symbol:'Rf',name:'Maldivian Rufiyaa',cc:'mv'},
+  {code:'ISK',symbol:'kr',name:'Icelandic Krona',cc:'is'},
+  {code:'RUB',symbol:'₽',name:'Russian Ruble',cc:'ru'},
+  {code:'EGP',symbol:'E£',name:'Egyptian Pound',cc:'eg'}
+];
+
+function _getUsedFlags() {
+  if (!appData || !appData.trips) return [];
+  var used = {};
+  appData.trips.forEach(function(t) {
+    if (t.flag) {
+      // Extract cc from flagcdn URL or legacy URL
+      var m = t.flag.match(/flagcdn\.com\/\w+\/(\w+)\./);
+      if (m) used[m[1]] = (used[m[1]] || 0) + 1;
+    }
+    var cc = _currencyToCC(t.currency);
+    if (cc) used[cc] = (used[cc] || 0) + 1;
+  });
+  return Object.keys(used).sort(function(a, b) { return used[b] - used[a]; });
+}
+
+function _getUsedCurrencies() {
+  if (!appData || !appData.trips) return [];
+  var used = {};
+  appData.trips.forEach(function(t) {
+    if (t.currency) {
+      var code = t.currency.replace(/[^A-Z]/g, '');
+      used[code] = (used[code] || 0) + 1;
+    }
+  });
+  return Object.keys(used).sort(function(a, b) { return used[b] - used[a]; });
+}
+
+function _currencyToCC(cur) {
+  if (!cur) return '';
+  var code = cur.replace(/[^A-Z]/g, '');
+  var c = _allCurrencies.find(function(x) { return x.code === code; });
+  return c ? c.cc : '';
+}
+
+function openPickerModal(title, bodyHtml) {
+  document.getElementById('pickerModalTitle').textContent = title;
+  document.getElementById('pickerModalBody').innerHTML = bodyHtml;
+  document.getElementById('pickerModal').classList.add('active');
+  history.pushState({ pickerOpen: true }, '');
+}
+
+function closePickerModal() {
+  document.getElementById('pickerModal').classList.remove('active');
+  _closingPicker = true;
+  if (history.state && history.state.pickerOpen) history.back();
+  setTimeout(function() { _closingPicker = false; }, 100);
+}
+
+function openFlagPicker(onSelect) {
+  var usedCCs = _getUsedFlags();
+  var sorted = _allCountries.slice().sort(function(a, b) {
+    var ai = usedCCs.indexOf(a.cc), bi = usedCCs.indexOf(b.cc);
+    if (ai !== -1 && bi !== -1) return ai - bi;
+    if (ai !== -1) return -1;
+    if (bi !== -1) return 1;
+    return a.name.localeCompare(b.name);
+  });
+
+  var h = '<div class="form-group"><div class="form-input-prefix"><span class="form-prefix material-icons-round">search</span>';
+  h += '<input class="form-input" id="flagSearch" placeholder="Search country..." oninput="filterPicker(\'flagGrid\',this.value)"></div></div>';
+  h += '<div id="flagGrid" style="display:flex;flex-wrap:wrap;gap:6px;max-height:50vh;overflow-y:auto;">';
+  sorted.forEach(function(c) {
+    var url = 'https://flagcdn.com/w80/' + c.cc + '.png';
+    h += '<div class="picker-item" data-search="' + escAttr(c.name.toLowerCase()) + '" onclick="selectPickerItem(\'' + escAttr(url) + '\')" style="cursor:pointer;text-align:center;width:60px;padding:6px 2px;border-radius:8px;">';
+    h += '<img src="' + url + '" style="width:36px;height:24px;border-radius:2px;object-fit:cover;display:block;margin:0 auto;">';
+    h += '<div style="font-size:9px;color:var(--text-muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(c.name) + '</div>';
+    h += '</div>';
+  });
+  h += '</div>';
+
+  window._pickerCallback = onSelect;
+  openPickerModal('Pick Flag', h);
+}
+
+function openCurrencyPicker(onSelect) {
+  var usedCodes = _getUsedCurrencies();
+  var sorted = _allCurrencies.slice().sort(function(a, b) {
+    var ai = usedCodes.indexOf(a.code), bi = usedCodes.indexOf(b.code);
+    if (ai !== -1 && bi !== -1) return ai - bi;
+    if (ai !== -1) return -1;
+    if (bi !== -1) return 1;
+    return a.code.localeCompare(b.code);
+  });
+
+  var h = '<div class="form-group"><div class="form-input-prefix"><span class="form-prefix material-icons-round">search</span>';
+  h += '<input class="form-input" id="curSearch" placeholder="Search currency..." oninput="filterPicker(\'curGrid\',this.value)"></div></div>';
+  h += '<div id="curGrid" style="max-height:50vh;overflow-y:auto;">';
+  sorted.forEach(function(c) {
+    var flagUrl = 'https://flagcdn.com/w40/' + c.cc + '.png';
+    h += '<div class="picker-item" data-search="' + escAttr((c.code + ' ' + c.name + ' ' + c.symbol).toLowerCase()) + '" onclick="selectPickerItem(\'' + escAttr(c.code + c.symbol) + '\')" style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:8px 4px;border-bottom:1px solid var(--border);">';
+    h += '<img src="' + flagUrl + '" style="width:24px;height:16px;border-radius:2px;flex-shrink:0;">';
+    h += '<span style="font-size:13px;font-weight:600;width:40px;">' + esc(c.code) + '</span>';
+    h += '<span style="font-size:13px;width:24px;color:var(--text-muted);">' + esc(c.symbol) + '</span>';
+    h += '<span style="font-size:12px;color:var(--text-light);flex:1;">' + esc(c.name) + '</span>';
+    h += '</div>';
+  });
+  h += '</div>';
+
+  window._pickerCallback = onSelect;
+  openPickerModal('Pick Currency', h);
+}
+
+function selectPickerItem(value) {
+  closePickerModal();
+  if (window._pickerCallback) {
+    window._pickerCallback(value);
+    window._pickerCallback = null;
+  }
+}
+
+function filterPicker(gridId, query) {
+  var grid = document.getElementById(gridId);
+  if (!grid) return;
+  var q = query.toLowerCase().trim();
+  grid.querySelectorAll('.picker-item').forEach(function(el) {
+    el.style.display = (!q || el.getAttribute('data-search').includes(q)) ? '' : 'none';
+  });
+}
+</script>
+
+<script>
+// ===== Overview Tab =====
+var donutChartInstance = null;
+var _overviewSection = 'dashboard';
+
+function switchOverviewSection(section, fromHash) {
+  _overviewSection = section;
+  try { localStorage.setItem('traveller_ov_section', section); } catch(e) {}
+  var hash = section === 'dashboard' ? '#overview' : '#overview-' + section;
+  if (!fromHash && location.hash !== hash) {
+    history.pushState(null, '', hash);
+  }
+  var sections = document.querySelectorAll('.overview-section');
+  for (var i = 0; i < sections.length; i++) sections[i].style.display = 'none';
+
+  // Check privacy for sub-sections
+  var settings = (appData && appData.settings) || {};
+  var privateTabs = (settings['app.private'] || '').split(',').filter(Boolean);
+  var isSectionPrivate = !isOwner && privateTabs.indexOf(section) >= 0;
+
+  var target = section === 'dashboard' ? 'overviewDashboard' : section === 'checklist' ? 'overviewChecklist' : 'overviewPostcard';
+  var el = document.getElementById(target);
+  if (el) {
+    if (isSectionPrivate) {
+      el.style.display = '';
+      el.innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--text-muted);"><span class="material-icons-round" style="font-size:48px;display:block;margin-bottom:12px;">lock</span>Private Zone</div>';
+    } else {
+      el.style.display = '';
+    }
+  }
+  // Update sub-nav active
+  var items = document.querySelectorAll('#overviewNav .sub-nav-item');
+  for (var j = 0; j < items.length; j++) {
+    items[j].classList.toggle('active', items[j].dataset.section === section);
+  }
+  // Show add button for checklist/postcard (owner only, not private)
+  var addBtn = document.getElementById('headerAddBtn');
+  if (addBtn) {
+    addBtn.style.display = (isOwner && (section === 'checklist' || section === 'postcard')) ? '' : 'none';
+  }
+}
+
+function switchExpChart(mode) {
+  var totalEl = document.getElementById('tripExpBars');
+  var dailyEl = document.getElementById('dailyExpBars');
+  var badge = document.getElementById('ovExpBadge');
+  var btns = document.querySelectorAll('.ov-exp-toggle-btn');
+  if (mode === 'total') {
+    if (totalEl) totalEl.style.display = '';
+    if (dailyEl) dailyEl.style.display = 'none';
+    if (badge) badge.textContent = window._ovExpTotal || '';
+  } else {
+    if (totalEl) totalEl.style.display = 'none';
+    if (dailyEl) dailyEl.style.display = '';
+    if (badge) badge.textContent = window._ovExpDaily || '';
+  }
+  for (var i = 0; i < btns.length; i++) {
+    btns[i].classList.toggle('active', (mode === 'total' && i === 0) || (mode === 'daily' && i === 1));
+  }
+}
+
+function renderOverviewTab() {
+  if (!appData || !appData.trips) return;
+
+  var allCats = ['Flight', 'Accommodation', 'Food', 'Explore', 'Shop', 'Transport', 'Others'];
+  var trips = appData.trips.slice().sort(function(a, b) {
+    return (b.start || '').localeCompare(a.start || '');
+  });
+  var expenses = appData.expenses || [];
+  var plans = appData.plans || [];
+
+  // Travel Calendar badge — total trips + total days
+  var totalTripDays = 0;
+  trips.forEach(function(t) { var d = daysBetween(t.start, t.end); if (typeof d === 'number') totalTripDays += d; });
+  document.getElementById('ovCalBadge').textContent = totalTripDays + 'd';
+
+  var labels = [];
+  var datasets = {};
+  allCats.forEach(function(cat) { datasets[cat] = []; });
+  var perDayData = [];
+
+  trips.forEach(function(t) {
+    labels.push(t.trip);
+    var tripExp = expenses.filter(function(e) { return e.trip === t.trip; });
+    var days = daysBetween(t.start, t.end);
+    var tripTotal = 0;
+
+    allCats.forEach(function(cat) {
+      var catTotal = 0;
+      tripExp.forEach(function(e) {
+        if ((e.category || 'Others') === cat) catTotal += parseCost(e.hkCost);
+      });
+      datasets[cat].push(catTotal);
+      tripTotal += catTotal;
+    });
+
+    perDayData.push(days > 0 ? Math.round(tripTotal / days) : 0);
+  });
+
+  // CSS Trip Expenses bars
+  var maxTotal = 1;
+  var tripTotals = [];
+  trips.forEach(function(t, i) {
+    var total = 0;
+    allCats.forEach(function(cat) { total += datasets[cat][i]; });
+    tripTotals.push(total);
+    if (total > maxTotal) maxTotal = total;
+  });
+
+  window._tripExpData = [];
+
+  var nonZeroTotals = tripTotals.filter(function(t) { return t > 0; });
+  var avgTripExp = nonZeroTotals.length > 0 ? Math.round(nonZeroTotals.reduce(function(a, b) { return a + b; }, 0) / nonZeroTotals.length) : 0;
+  var avgTripPct = maxTotal > 0 ? (avgTripExp / maxTotal * 100) : 0;
+
+  var bhtml = '<div style="position:relative;">';
+  var tipIdx = 0;
+  trips.forEach(function(t, i) {
+    var total = tripTotals[i];
+    if (total <= 0) return; // skip trips with no expenses
+    var breakdown = [];
+    allCats.forEach(function(cat) {
+      if (datasets[cat][i] > 0) breakdown.push({ icon: catIcons[cat] || 'label', color: catColors[cat], val: '$' + formatNum(datasets[cat][i]) });
+    });
+    breakdown.push({ icon: 'today', color: '#E53E3E', val: '$' + formatNum(perDayData[i]) + '/d' });
+    window._tripExpData.push(breakdown);
+
+    bhtml += '<div class="ov-bar-row" onclick="showBarTip(event, ' + tipIdx + ',\'trip\')">';
+    bhtml += '<div class="ov-bar-label">' + esc(t.trip) + '</div>';
+    bhtml += '<div class="ov-bar-track">';
+    allCats.forEach(function(cat) {
+      var val = datasets[cat][i];
+      if (val > 0) {
+        var segPct = total > 0 ? (val / maxTotal * 100) : 0;
+        bhtml += '<div class="ov-bar-seg" style="width:' + segPct + '%;background:' + catColors[cat] + '"></div>';
+      }
+    });
+    bhtml += '</div>';
+    bhtml += '<div class="ov-bar-amt">$' + formatNum(total) + '</div>';
+    bhtml += '</div>';
+    tipIdx++;
+  });
+  if (avgTripExp > 0 && nonZeroTotals.length > 1) {
+    bhtml += '<div class="ov-avg-line" style="left:calc(116px + (100% - 116px - 56px) * ' + avgTripPct + ' / 100);"></div>';
+  }
+  bhtml += '</div>';
+  bhtml += '<div class="ov-legend">';
+  allCats.forEach(function(cat) {
+    bhtml += '<span class="ov-legend-item"><span class="ov-legend-dot" style="background:' + catColors[cat] + '"></span>' + esc(cat) + '</span>';
+  });
+  bhtml += '</div>';
+  document.getElementById('tripExpBars').innerHTML = bhtml;
+
+  // Expenses badge — total calculated now, daily set later
+  var grandTripTotal = 0;
+  tripTotals.forEach(function(t) { grandTripTotal += t; });
+  window._ovExpTotal = '$' + formatNum(grandTripTotal);
+
+  // CSS Daily Expense bars
+  var maxDaily = 1;
+  var dailyRows = [];
+  trips.forEach(function(t, i) {
+    var days = daysBetween(t.start, t.end);
+    var accom = datasets['Accommodation'] ? datasets['Accommodation'][i] : 0;
+    var other = 0;
+    allCats.forEach(function(cat) {
+      if (cat !== 'Flight' && cat !== 'Accommodation') other += datasets[cat][i];
+    });
+    var accomD = days > 0 ? Math.round(accom / days) : 0;
+    var spendD = days > 0 ? Math.round(other / days) : 0;
+    var totalD = accomD + spendD;
+    if (totalD > maxDaily && totalD > 0) maxDaily = totalD;
+    dailyRows.push({ trip: t.trip, accomD: accomD, spendD: spendD, totalD: totalD });
+  });
+
+  window._dailyExpData = [];
+
+  // Compute average before rendering (exclude trips with $0)
+  var nonZeroDaily = dailyRows.filter(function(r) { return r.totalD > 0; });
+  var totalDaily = 0;
+  nonZeroDaily.forEach(function(r) { totalDaily += r.totalD; });
+  var avgDaily = nonZeroDaily.length > 0 ? Math.round(totalDaily / nonZeroDaily.length) : 0;
+  var avgPct = maxDaily > 0 ? (avgDaily / maxDaily * 100) : 0;
+
+  var dhtml = '<div style="position:relative;">';
+  var dailyTipIdx = 0;
+  dailyRows.forEach(function(r, i) {
+    if (r.totalD <= 0) return; // skip trips with no expenses
+    window._dailyExpData.push([
+      { icon: 'hotel', color: catColors['Accommodation'], val: '$' + formatNum(r.accomD) + '/d' },
+      { icon: 'payments', color: '#84CC16', val: '$' + formatNum(r.spendD) + '/d' },
+      { icon: 'functions', color: 'var(--text)', val: '$' + formatNum(r.totalD) + '/d' }
+    ]);
+
+    dhtml += '<div class="ov-bar-row" onclick="showBarTip(event, ' + dailyTipIdx + ',\'daily\')">';
+    dhtml += '<div class="ov-bar-label">' + esc(r.trip) + '</div>';
+    dhtml += '<div class="ov-bar-track">';
+    if (r.accomD > 0) dhtml += '<div class="ov-bar-seg" style="width:' + (r.accomD / maxDaily * 100) + '%;background:' + catColors['Accommodation'] + '"></div>';
+    if (r.spendD > 0) dhtml += '<div class="ov-bar-seg" style="width:' + (r.spendD / maxDaily * 100) + '%;background:#84CC16"></div>';
+    dhtml += '</div>';
+    dhtml += '<div class="ov-bar-amt">$' + formatNum(r.totalD) + '/d</div>';
+    dhtml += '</div>';
+    dailyTipIdx++;
+  });
+  // Average line — positioned over the bar track area
+  if (avgDaily > 0 && nonZeroDaily.length > 1) {
+    dhtml += '<div class="ov-avg-line" style="left:calc(116px + (100% - 116px - 56px) * ' + avgPct + ' / 100);"></div>';
+  }
+  dhtml += '</div>';
+  dhtml += '<div class="ov-legend">';
+  dhtml += '<span class="ov-legend-item"><span class="ov-legend-dot" style="background:' + catColors['Accommodation'] + '"></span>Accommodation</span>';
+  dhtml += '<span class="ov-legend-item"><span class="ov-legend-dot" style="background:#84CC16"></span>Daily Spend</span>';
+  dhtml += '</div>';
+  document.getElementById('dailyExpBars').innerHTML = dhtml;
+
+  // Now set daily badge and default badge
+  window._ovExpDaily = '$' + formatNum(avgDaily) + '/d';
+  document.getElementById('ovExpBadge').textContent = window._ovExpTotal;
+
+  // Travel Calendar Heatmap
+  var expenses = appData.expenses || [];
+  var tripExpTotals = {};
+  expenses.forEach(function(e) {
+    if (!tripExpTotals[e.trip]) tripExpTotals[e.trip] = 0;
+    tripExpTotals[e.trip] += parseCost(e.hkCost);
+  });
+
+  function expColor(total) {
+    if (total <= 0) return 'rgba(229,62,62,0.15)';
+    if (total <= 3000) return 'rgba(229,62,62,0.3)';
+    if (total <= 6000) return 'rgba(229,62,62,0.5)';
+    if (total <= 10000) return 'rgba(229,62,62,0.7)';
+    return 'rgba(229,62,62,1)';
+  }
+
+  var tripMonths = {};
+  var yearSet = {};
+  var occupied = {}; // 'YYYY-MM' => true
+
+  // Sort by start date (earliest first) so earlier trips claim their month first
+  var sortedTrips = appData.trips.slice().sort(function(a, b) {
+    return (a.start || '').localeCompare(b.start || '');
+  });
+
+  sortedTrips.forEach(function(t) {
+    var startD = new Date(t.start);
+    var endD = new Date(t.end);
+    if (isNaN(startD) || isNaN(endD)) return;
+    var total = tripExpTotals[t.trip] || 0;
+    var color = expColor(total);
+
+    // Try start month first, if occupied push to next month
+    var y = startD.getFullYear();
+    var m = startD.getMonth();
+    var key = y + '-' + m;
+
+    if (occupied[key]) {
+      // Push to next month (within trip's date range or start+1)
+      var nextD = new Date(y, m + 1, 1);
+      y = nextD.getFullYear();
+      m = nextD.getMonth();
+      key = y + '-' + m;
+    }
+
+    yearSet[y] = true;
+    if (!tripMonths[y]) tripMonths[y] = {};
+    if (!tripMonths[y][m]) tripMonths[y][m] = [];
+    tripMonths[y][m].push({ name: t.trip, color: color, total: total, flag: t.flag || '' });
+    occupied[key] = true;
+  });
+
+  var years = Object.keys(yearSet).map(Number).sort(function(a, b) { return b - a; });
+  var months = ['J','F','M','A','M','J','J','A','S','O','N','D'];
+
+  var hhtml = '<div class="cal-grid">';
+  hhtml += '<div class="cal-row"><div class="cal-year"></div>';
+  months.forEach(function(m) { hhtml += '<div class="cal-month-hdr">' + m + '</div>'; });
+  hhtml += '</div>';
+
+  years.forEach(function(y) {
+    hhtml += '<div class="cal-row"><div class="cal-year">' + y + '</div>';
+    for (var m = 0; m < 12; m++) {
+      var trps = (tripMonths[y] && tripMonths[y][m]) || [];
+      if (trps.length > 0) {
+        var tipText = trps.map(function(x) { return x.name + ' $' + formatNum(x.total); }).join('\n');
+        var t0 = trps[0];
+        var flagsHtml = t0.flag ? '<img src="' + escAttr(t0.flag) + '" class="cal-flag" alt="" title="' + escAttr(tipText) + '">' : '<span class="cal-dot" style="background:' + t0.color + '" title="' + escAttr(tipText) + '"></span>';
+        var tripNames = trps.map(function(x) { return x.name; });
+        hhtml += '<div class="cal-cell cal-filled" data-trips="' + escAttr(tripNames.join('|')) + '" data-tip="' + escAttr(tipText) + '" title="' + escAttr(tipText) + '">' + flagsHtml + '</div>';
+      } else {
+        hhtml += '<div class="cal-cell"></div>';
+      }
+    }
+    hhtml += '</div>';
+  });
+  hhtml += '</div>';
+
+  hhtml += '<div class="cal-legend"><span class="cal-legend-label">Tap flag for trip details</span></div>';
+
+  document.getElementById('calendarHeatmap').innerHTML = hhtml;
+
+  document.querySelectorAll('.cal-filled').forEach(function(el) {
+    el.addEventListener('click', function() {
+      var tripName = (el.getAttribute('data-trips') || '').split('|')[0];
+      if (tripName) {
+        selectedTrip = tripName;
+        saveSelectedTrip(selectedTrip);
+        renderApp();
+        switchTab('trip');
+      }
+    });
+  });
+
+  var isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  var textColor = isDark ? '#aaa' : '#666';
+
+  // Pie chart
+  if (donutChartInstance) donutChartInstance.destroy();
+  var donutCtx = document.getElementById('donutChart').getContext('2d');
+
+  var donutLabels = [];
+  var donutData = [];
+  var donutColors = [];
+  allCats.forEach(function(cat) {
+    var total = 0;
+    datasets[cat].forEach(function(v) { total += v; });
+    if (total > 0) {
+      donutLabels.push(cat);
+      donutData.push(total);
+      donutColors.push(catColors[cat]);
+    }
+  });
+
+  var grandTotal = donutData.reduce(function(a, b) { return a + b; }, 0);
+
+  var pieIconPlugin = {
+    id: 'pieIcons',
+    afterDraw: function(chart) {
+      var ctx = chart.ctx;
+      var meta = chart.getDatasetMeta(0);
+      var total = chart.data.datasets[0].data.reduce(function(a, b) { return a + b; }, 0);
+      ctx.save();
+
+      meta.data.forEach(function(arc, i) {
+        var label = chart.data.labels[i];
+        var iconChar = catIconUnicode[label] || '';
+        if (!iconChar) return;
+        var val = chart.data.datasets[0].data[i];
+        var pct = total > 0 ? val / total : 0;
+        var centerAngle = (arc.startAngle + arc.endAngle) / 2;
+
+        if (pct >= 0.10) {
+          ctx.font = '16px "Material Icons Round"';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          var r = arc.outerRadius * 0.6;
+          var x = arc.x + Math.cos(centerAngle) * r;
+          var y = arc.y + Math.sin(centerAngle) * r;
+          ctx.fillStyle = 'rgba(255,255,255,0.9)';
+          ctx.fillText(iconChar, x, y);
+        } else {
+          var innerR = arc.outerRadius * 0.85;
+          var outerR = arc.outerRadius + 20;
+          var labelR = arc.outerRadius + 30;
+          var x1 = arc.x + Math.cos(centerAngle) * innerR;
+          var y1 = arc.y + Math.sin(centerAngle) * innerR;
+          var x2 = arc.x + Math.cos(centerAngle) * outerR;
+          var y2 = arc.y + Math.sin(centerAngle) * outerR;
+          var xL = arc.x + Math.cos(centerAngle) * labelR;
+          var yL = arc.y + Math.sin(centerAngle) * labelR;
+
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y2);
+          ctx.strokeStyle = chart.data.datasets[0].backgroundColor[i];
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          ctx.font = '14px "Material Icons Round"';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = chart.data.datasets[0].backgroundColor[i];
+          ctx.fillText(iconChar, xL, yL);
+        }
+      });
+      ctx.restore();
+    }
+  };
+
+  donutChartInstance = new Chart(donutCtx, {
+    type: 'pie',
+    data: {
+      labels: donutLabels,
+      datasets: [{
+        data: donutData,
+        backgroundColor: donutColors,
+        borderWidth: 0
+      }]
+    },
+    plugins: [pieIconPlugin],
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      cutout: 0,
+      layout: { padding: 10 },
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 }, color: textColor } },
+        tooltip: {
+          callbacks: {
+            label: function(ctx) {
+              var val = ctx.parsed;
+              var pct = grandTotal > 0 ? Math.round(val / grandTotal * 100) : 0;
+              return ctx.label + ': $' + formatNum(val) + ' (' + pct + '%)';
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+// ===== Bar Tooltip =====
+function showBarTip(evt, idx, type) {
+  var existing = document.getElementById('barTip');
+  if (existing) existing.remove();
+  var data = type === 'trip' ? window._tripExpData[idx] : window._dailyExpData[idx];
+  if (!data || !data.length) return;
+  var tip = document.createElement('div');
+  tip.id = 'barTip';
+  tip.className = 'bar-tip';
+  var html = '';
+  data.forEach(function(d) {
+    html += '<div class="bar-tip-row"><span class="material-icons-round" style="font-size:14px;color:' + d.color + '">' + d.icon + '</span><span>' + d.val + '</span></div>';
+  });
+  tip.innerHTML = html;
+  document.body.appendChild(tip);
+  var rect = evt.currentTarget.getBoundingClientRect();
+  tip.style.top = (rect.bottom + window.scrollY + 4) + 'px';
+  tip.style.left = (rect.left + rect.width / 2) + 'px';
+  setTimeout(function() { if (tip.parentNode) tip.remove(); }, 3000);
+  document.addEventListener('click', function dismiss(e) {
+    if (e.target !== evt.currentTarget && !evt.currentTarget.contains(e.target)) {
+      if (tip.parentNode) tip.remove();
+      document.removeEventListener('click', dismiss);
+    }
+  });
+}
+</script>
+
+<script>
+// ===== Map Tab =====
+function renderMapTab() {
+  var container = document.getElementById('mapContainer');
+  var mapUrl = currentTrip.map || '';
+  if (!mapUrl) {
+    container.innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--text-muted);">' +
+      '<span class="material-icons-round" style="font-size:48px;">map</span>' +
+      '<div style="margin-top:12px;font-size:15px;">No map for this trip</div></div>';
+    return;
+  }
+  // Convert edit URL to embed URL
+  var embedUrl = mapUrl.replace('/edit', '/embed').replace(/&usp=.*/, '');
+  var html = '<iframe src="' + esc(embedUrl) + '" style="width:100%;height:100%;border:none;" allowfullscreen loading="lazy"></iframe>';
+  container.innerHTML = html;
+}
+
+// ===== Trip Tab =====
+function renderTripTab() {
+  var days = daysBetween(currentTrip.start, currentTrip.end);
+
+  // Trip selector
+  document.getElementById('tripName').textContent = currentTrip.trip;
+  var flagImg = document.getElementById('tripFlag');
+  var flagSrc = currentTrip.flag;
+  if (flagSrc) { flagImg.src = flagSrc; flagImg.style.display = ''; }
+  else { flagImg.style.display = 'none'; }
+
+  var totalDist = 0, totalHotel = 0;
+  currentPlans.forEach(function(p) {
+    if (p.distance) totalDist += parseFloat(p.distance) || 0;
+    totalHotel += parseCost(p.localCost);
+  });
+  var meta = formatDateRange(currentTrip.start, currentTrip.end) + ' \u00B7 ' + days + 'd';
+  if (totalDist > 0) meta += ' \u00B7 ' + Math.round(totalDist) + 'km';
+  if (currentTrip.exchangeRate) meta += ' \u00B7 ' + currentTrip.exchangeRate;
+  document.getElementById('tripMeta').textContent = meta;
+
+  // Flights
+  var flights = (appData.flights || []).filter(function(f) { return f.trip === selectedTrip; });
+  var flightExp = (appData.expenses || []).filter(function(e) { return e.trip === selectedTrip && e.category === 'Flight'; });
+  var totalFlightHK = 0;
+  flightExp.forEach(function(e) { totalFlightHK += parseCost(e.hkCost); });
+
+  var fhtml = '';
+  fhtml += '<div class="section-title"><span class="material-icons-round">flight</span> Flights';
+  fhtml += '<span class="section-title-badge">$' + formatNum(totalFlightHK) + '</span>';
+  if (isOwner) fhtml += '<button class="section-title-add owner-only" onclick="openFlightForm()"><span class="material-icons-round">add</span></button>';
+  fhtml += '</div>';
+  if (flights.length > 0) {
+    fhtml += '<div class="card">';
+    flights.forEach(function(f, i) {
+      if (i > 0) fhtml += '<div class="divider"></div>';
+
+      if (isOwner) {
+        fhtml += '<div class="swipe-container"><div class="swipe-actions">';
+        fhtml += '<button class="swipe-btn swipe-btn-edit" onclick="openFlightEditForm(' + f.row + ')"><span class="material-icons-round">edit</span></button>';
+        fhtml += '<button class="swipe-btn swipe-btn-delete" onclick="confirmDeleteFlight(' + f.row + ')"><span class="material-icons-round">delete</span></button>';
+        fhtml += '</div><div class="swipe-content">';
+      }
+
+      fhtml += '<div class="flight-row">';
+      fhtml += '<div class="flight-cols">';
+      fhtml += '<div class="flight-col-left">';
+      fhtml += '<div class="flight-airport">' + esc(f.origin) + '</div>';
+      fhtml += '<div class="flight-time">' + esc(displayDate(f.date)) + ' ' + esc(f.departure) + '</div>';
+      fhtml += '</div>';
+      fhtml += '<div class="flight-col-center">';
+      fhtml += '<div class="flight-no">' + esc(f.flightNo) + '</div>';
+      fhtml += '<div class="flight-arrow-line"><span class="material-icons-round">arrow_forward</span></div>';
+      if (f.duration) fhtml += '<div class="flight-duration">' + esc(f.duration) + '</div>';
+      fhtml += '</div>';
+      fhtml += '<div class="flight-col-right">';
+      fhtml += '<div class="flight-airport">' + esc(f.destination) + '</div>';
+      // If arrival time < departure time, it's next day
+      var arrDate = displayDate(f.date);
+      if (f.departure && f.arrival && formatTime(f.arrival) < formatTime(f.departure)) {
+        var tripYear = currentTrip && currentTrip.start ? new Date(currentTrip.start).getFullYear() : new Date().getFullYear();
+        var nextDay = parseAnyDate(f.date, tripYear);
+        if (nextDay) { nextDay.setDate(nextDay.getDate() + 1); arrDate = displayDate(nextDay.getFullYear() + '-' + ('0'+(nextDay.getMonth()+1)).slice(-2) + '-' + ('0'+nextDay.getDate()).slice(-2)); }
+      }
+      fhtml += '<div class="flight-time">' + esc(arrDate) + ' ' + esc(f.arrival) + '</div>';
+      fhtml += '</div>';
+      fhtml += '</div>';
+      if (f.bookingRef || (f.airline && f.airline.trim())) {
+        fhtml += '<div class="flight-ref">';
+        if (f.bookingRef) fhtml += '<span>Ref: ' + esc(f.bookingRef) + '</span>';
+        if (f.airline && f.airline.trim()) {
+          fhtml += '<a class="flight-booking-link" href="' + escAttr(f.airline) + '" target="_blank" rel="noopener" title="Booking"><span class="material-icons-round">flight</span></a>';
+        }
+        fhtml += '</div>';
+      }
+      fhtml += '</div>';
+
+      if (isOwner) fhtml += '</div></div>';
+    });
+    fhtml += '</div>';
+  }
+  document.getElementById('flightsContent').innerHTML = fhtml;
+
+  // Day Plan (scrollable table)
+  var totalAccom = 0;
+  currentPlans.forEach(function(p) { totalAccom += parseCost(p.localCost); });
+  var ahtml = '';
+  ahtml += '<div class="section-title"><span class="material-icons-round">date_range</span> Plan';
+  ahtml += '<span class="section-title-badge">' + currency + formatNum(totalAccom) + '</span>';
+  if (isOwner) ahtml += '<span class="material-icons-round section-title-add owner-only" onclick="openDayPlanForm()">add</span>';
+  ahtml += '</div>';
+  if (currentPlans.length > 0) {
+    ahtml += '<div class="card" id="dayPlanCard">';
+    currentPlans.forEach(function(p, i) {
+      if (i > 0) ahtml += '<div class="divider"></div>';
+      var dateStr = displayDate(p.date);
+      var distStr = (p.distance ? esc(p.distance) + 'km' : '') + (p.ascent ? ' ↑' + esc(p.ascent) : '');
+
+      if (isOwner) {
+        ahtml += '<div class="swipe-container"><div class="swipe-actions">';
+        ahtml += '<button class="swipe-btn swipe-btn-edit" onclick="openDayPlanEditForm(' + p.row + ')"><span class="material-icons-round">edit</span></button>';
+        ahtml += '<button class="swipe-btn swipe-btn-delete" onclick="confirmDeleteDayPlan(' + p.row + ')"><span class="material-icons-round">delete</span></button>';
+        ahtml += '</div><div class="swipe-content">';
+      }
+
+      var dpToday = isToday(p.date);
+      ahtml += '<div class="dayplan-row' + (dpToday ? ' is-today' : '') + '">';
+      ahtml += '<div class="dayplan-r1">';
+      ahtml += '<span class="dayplan-date">' + esc(dateStr) + '</span>';
+      ahtml += '<span class="dayplan-itin">' + esc(p.itinerary || '') + '</span>';
+      if (distStr) ahtml += '<span class="dayplan-dist">' + distStr + '</span>';
+      ahtml += '</div>';
+      if (p.accommodation || p.localCost || p.note) {
+        ahtml += '<div class="dayplan-r2">';
+        if (p.accommodation) {
+          ahtml += '<span class="material-icons-round">hotel</span>';
+          if (p.url && p.url.trim()) {
+            ahtml += '<span class="dayplan-hotel"><a href="' + escAttr(p.url) + '" target="_blank" rel="noopener">' + esc(p.accommodation) + '</a></span>';
+          } else {
+            ahtml += '<span class="dayplan-hotel">' + esc(p.accommodation) + '</span>';
+          }
+        }
+        if (p.note) {
+          ahtml += '<span class="material-icons-round">sticky_note_2</span>';
+          ahtml += '<span class="dayplan-note">' + esc(p.note) + '</span>';
+        }
+        if (p.localCost) ahtml += '<span class="dayplan-cost">' + currency + formatNum(parseCost(p.localCost)) + '</span>';
+        ahtml += '</div>';
+      }
+      ahtml += '</div>';
+
+      if (isOwner) ahtml += '</div></div>';
+    });
+    ahtml += '</div>';
+  }
+  document.getElementById('flightsContent').innerHTML = fhtml + ahtml;
+
+  // Expense overview (read-only summary)
+  var expenses = (appData.expenses || []).filter(function(e) { return e.trip === selectedTrip; });
+  var cats = {};
+  var totalHKExp = 0;
+  expenses.forEach(function(e) {
+    var cat = e.category || 'Others';
+    if (!cats[cat]) cats[cat] = 0;
+    cats[cat] += parseCost(e.hkCost);
+    totalHKExp += parseCost(e.hkCost);
+  });
+  var ehtml = '';
+  ehtml += '<div class="section-title"><span class="material-icons-round">attach_money</span> Expenses<span class="section-title-badge">$' + formatNum(totalHKExp) + '</span>';
+  if (isOwner) ehtml += '<button class="section-title-add owner-only" onclick="switchTab(\'expenses\');setTimeout(openExpForm,300)"><span class="material-icons-round">add</span></button>';
+  ehtml += '</div>';
+  {
+    // Always show all categories
+    _allCatNames.forEach(function(c) { if (!cats[c]) cats[c] = 0; });
+    var expCatKeys = _allCatNames.slice().sort(function(a, b) { return cats[b] - cats[a]; });
+    var expMaxCat = Math.max.apply(null, expCatKeys.map(function(c) { return cats[c]; })) || 1;
+    ehtml += '<div class="card card-padded">';
+    expCatKeys.forEach(function(cat) {
+      var icon = catIcons[cat] || 'label';
+      var catCol = catColors[cat] || '#94A3B8';
+      var pct = expMaxCat > 0 ? Math.round((cats[cat] / expMaxCat) * 100) : 0;
+      ehtml += '<div class="exp-bar-row">';
+      ehtml += '<div class="exp-bar-label"><span class="material-icons-round" style="color:' + catCol + '">' + icon + '</span></div>';
+      ehtml += '<div class="exp-bar-track"><div class="exp-bar-fill" style="width:' + pct + '%;background:' + catCol + '"></div></div>';
+      ehtml += '<div class="exp-bar-amt">$' + formatNum(cats[cat]) + '</div>';
+      ehtml += '</div>';
+    });
+    ehtml += '</div>';
+  }
+
+  // Info links
+  var infos = (appData.info || []).filter(function(i) { return i.trip === selectedTrip && (i.item || i.url); });
+  var ihtml = '';
+  ihtml += '<div class="section-title"><span class="material-icons-round">info</span> Information';
+  if (infos.length > 0) ihtml += '<span class="section-title-badge">' + infos.length + '</span>';
+  if (isOwner) ihtml += '<button class="section-title-add owner-only" onclick="openInfoForm()"><span class="material-icons-round">add</span></button>';
+  ihtml += '</div>';
+  if (infos.length > 0) {
+    ihtml += '<div class="card">';
+    infos.forEach(function(inf, i) {
+      if (i > 0) ihtml += '<div class="divider"></div>';
+
+      if (isOwner) {
+        ihtml += '<div class="swipe-container"><div class="swipe-actions">';
+        ihtml += '<button class="swipe-btn swipe-btn-edit" onclick="openInfoEditForm(' + inf.row + ')"><span class="material-icons-round">edit</span></button>';
+        ihtml += '<button class="swipe-btn swipe-btn-delete" onclick="confirmDeleteInfo(' + inf.row + ')"><span class="material-icons-round">delete</span></button>';
+        ihtml += '</div><div class="swipe-content">';
+      }
+
+      ihtml += '<div class="info-row">';
+      if (inf.url && inf.url.trim()) {
+        ihtml += '<a class="info-link" href="' + escAttr(inf.url) + '" target="_blank" rel="noopener">' + esc(inf.item || inf.url) + '</a>';
+      } else {
+        ihtml += '<span class="info-item">' + esc(inf.item) + '</span>';
+      }
+      ihtml += '</div>';
+
+      if (isOwner) ihtml += '</div></div>';
+    });
+    ihtml += '</div>';
+  }
+  document.getElementById('infoContent').innerHTML = ehtml + ihtml;
+
+  // Init swipe on all sections
+  if (isOwner) {
+    initSwipeRows(document.getElementById('flightsContent'));
+    var dpCard = document.getElementById('dayPlanCard');
+    if (dpCard) initSwipeRows(dpCard);
+    initSwipeRows(document.getElementById('infoContent'));
+  }
+}
+
+// ===== Trip Metadata Edit =====
+function openTripEditForm() {
+  resetAllSwipes();
+  var t = currentTrip;
+  var flagSrc = t.flag || '';
+  var h = '';
+  h += fld('flight_takeoff', 'tripEditName', '', t.trip, 'Trip Name*');
+  h += '<div class="form-row">';
+  h += fld('event', 'tripEditStart', 'date', t.start, 'Start', ' onchange="document.getElementById(\'tripEditEnd\').min=this.value"');
+  h += fld('event', 'tripEditEnd', 'date', t.end, 'End', ' min="' + escAttr(t.start || '') + '"');
+  h += '</div>';
+  h += '<div class="form-row">';
+  h += '<div class="form-group" style="flex:1;"><div class="form-input-prefix" onclick="openCurrencyPicker(function(v){document.getElementById(\'tripEditCur\').value=v;});" style="cursor:pointer;">';
+  h += '<span class="form-prefix material-icons-round">currency_exchange</span>';
+  h += '<input class="form-input" id="tripEditCur" value="' + escAttr(t.currency) + '" placeholder="Currency" readonly></div></div>';
+  h += fld('swap_horiz', 'tripEditRate', '', t.exchangeRate || '', 'Exchange Rate', ' inputmode="decimal" oninput="cleanCostInput(this)"');
+  h += '</div>';
+  h += '<div class="form-group"><div class="form-input-prefix" onclick="openFlagPicker(function(v){document.getElementById(\'tripEditFlag\').value=v;var img=document.getElementById(\'tripFlagPreview\');img.src=v;img.style.display=\'\';});" style="cursor:pointer;">';
+  h += '<span class="form-prefix material-icons-round">flag</span>';
+  h += '<input class="form-input" id="tripEditFlag" value="' + escAttr(flagSrc || '') + '" placeholder="Tap to pick flag" readonly style="padding-right:40px;">';
+  h += '<img id="tripFlagPreview" src="' + escAttr(flagSrc || '') + '" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);width:28px;height:18px;border-radius:2px;object-fit:cover;' + (flagSrc ? '' : 'display:none;') + '" onerror="this.style.display=\'none\'">';
+  h += '</div></div>';
+  h += fld('map', 'tripEditMap', '', t.map || '', 'Google My Maps URL');
+  h += '<div class="form-row" style="margin-top:8px;">';
+  h += '<button class="form-btn form-btn-primary" onclick="saveTripEdit()" style="flex:1;">Save</button>';
+  h += '<button class="form-btn form-btn-delete" onclick="closeFormModal();setTimeout(confirmDeleteTrip,200)" style="flex:1;">Delete</button>';
+  h += '</div>';
+  openFormModal('Edit Trip', h);
+}
+
+function saveTripEdit() {
+  var t = currentTrip;
+  var oldName = t.trip;
+  var name = document.getElementById('tripEditName').value;
+  var start = document.getElementById('tripEditStart').value;
+  var end = document.getElementById('tripEditEnd').value;
+  var cur = document.getElementById('tripEditCur').value;
+  var rate = document.getElementById('tripEditRate').value;
+  var flag = document.getElementById('tripEditFlag').value;
+  var map = document.getElementById('tripEditMap').value;
+  if (!name.trim()) { warnToast('Trip name required'); return; }
+  if (start && end && end < start) { warnToast('End date must be after start'); return; }
+
+  setFormSaving(true);
+  startSync();
+  var nameChanged = name !== oldName;
+  t.trip = name; t.start = start; t.end = end; t.currency = cur; t.exchangeRate = rate; t.flag = flag; t.map = map;
+  selectedTrip = name;
+  saveSelectedTrip(name);
+  closeFormModal();
+  renderApp();
+  showToast(nameChanged ? 'Renaming trip...' : 'Trip updated', 'success');
+
+  if (nameChanged) {
+    // Rename across all sheets, then update trip row
+    google.script.run
+      .withSuccessHandler(function() {
+        google.script.run
+          .withSuccessHandler(function() { endSync(true); refreshData(); crudToast('renamed', 'Trip'); })
+          .withFailureHandler(function(err) { endSync(false); failToast(err); refreshData(); })
+          .editTrip(t.row, name, start, end, flag, cur, rate, t.visible, map);
+      })
+      .withFailureHandler(function(err) { endSync(false); failToast(null, 'rename'); refreshData(); })
+      .renameTrip(oldName, name);
+  } else {
+    google.script.run
+      .withSuccessHandler(function() { endSync(true); })
+      .withFailureHandler(function(err) { endSync(false); failToast(err); refreshData(); })
+      .editTrip(t.row, name, start, end, flag, cur, rate, t.visible, map);
+  }
+}
+
+// ===== Add Trip Form =====
+function openAddTripForm() {
+  // Pre-fill from most recent trip (by start date)
+  var recent = appData.trips.slice().sort(function(a, b) { return (b.start || '').localeCompare(a.start || ''); })[0];
+  var defCur = recent ? recent.currency || '' : '';
+  var defRate = recent ? recent.exchangeRate || '' : '';
+  var defFlag = recent ? recent.flag || '' : '';
+
+  var h = '';
+  h += fld('flight_takeoff', 'newTripName', '', '', 'Trip Name*');
+  h += '<div class="form-row">';
+  h += fld('event', 'newTripStart', 'date', '', 'Start*', ' onchange="document.getElementById(\'newTripEnd\').min=this.value"');
+  h += fld('event', 'newTripEnd', 'date', '', 'End*');
+  h += '</div>';
+  h += '<div class="form-row">';
+  h += '<div class="form-group" style="flex:1;"><div class="form-input-prefix" onclick="openCurrencyPicker(function(v){document.getElementById(\'newTripCur\').value=v;});" style="cursor:pointer;">';
+  h += '<span class="form-prefix material-icons-round">currency_exchange</span>';
+  h += '<input class="form-input" id="newTripCur" value="' + escAttr(defCur) + '" placeholder="Currency*" readonly></div></div>';
+  h += fld('swap_horiz', 'newTripRate', '', defRate, 'Exchange Rate*', ' inputmode="decimal" oninput="cleanCostInput(this)"');
+  h += '</div>';
+  h += '<div class="form-group"><div class="form-input-prefix" onclick="openFlagPicker(function(v){document.getElementById(\'newTripFlag\').value=v;var img=document.getElementById(\'newTripFlagPreview\');img.src=v;img.style.display=\'\';});" style="cursor:pointer;">';
+  h += '<span class="form-prefix material-icons-round">flag</span>';
+  h += '<input class="form-input" id="newTripFlag" value="' + escAttr(defFlag) + '" placeholder="Tap to pick flag" readonly style="padding-right:40px;">';
+  h += '<img id="newTripFlagPreview" src="' + escAttr(defFlag) + '" style="' + (defFlag ? '' : 'display:none;') + 'position:absolute;right:8px;top:50%;transform:translateY(-50%);width:28px;height:18px;border-radius:2px;object-fit:cover;" onerror="this.style.display=\'none\'">';
+  h += '</div></div>';
+  h += fld('map', 'newTripMap', '', '', 'Google My Maps URL');
+  h += '<button class="form-btn form-btn-primary" onclick="saveNewTrip()">Save</button>';
+  openFormModal('Add Trip', h);
+}
+
+function saveNewTrip() {
+  var name = document.getElementById('newTripName').value.trim();
+  var start = document.getElementById('newTripStart').value;
+  var end = document.getElementById('newTripEnd').value;
+  var cur = document.getElementById('newTripCur').value.trim();
+  var rate = document.getElementById('newTripRate').value.trim();
+  var flag = document.getElementById('newTripFlag').value;
+  var map = document.getElementById('newTripMap').value;
+
+  if (!name) { warnToast('Trip name is required'); return; }
+  if (!start) { warnToast('Start date is required'); return; }
+  if (!end) { warnToast('End date is required'); return; }
+  if (end < start) { warnToast('End date must be after start'); return; }
+  if (!cur) { warnToast('Currency is required'); return; }
+  if (!rate) { warnToast('Exchange rate is required'); return; }
+
+  setFormSaving(true);
+  startSync();
+  appData.trips.unshift({ row: -1, trip: name, start: start, end: end, flag: flag, currency: cur, exchangeRate: rate, visible: true, map: map });
+  selectedTrip = name;
+  saveSelectedTrip(name);
+  closeFormModal();
+  renderApp();
+  crudToast('added', 'Trip');
+
+  google.script.run
+    .withSuccessHandler(function() { endSync(true); refreshData(); })
+    .withFailureHandler(function(err) { endSync(false); failToast(err); refreshData(); })
+    .createTrip(name, start, end, flag, cur, rate, map);
+}
+
+// ===== Flight Forms =====
+function _buildFlightFormHtml(data) {
+  var fltDateVal = data && data.date ? (data.date.match(/^\d{4}-/) ? data.date : displayDateToISO(data.date, currentTrip.start)) : defaultFormDate();
+
+  var h = '';
+  h += '<div class="form-row">';
+  h += fld('flight_takeoff', 'fltOrigin', '', data ? data.origin : '', 'Origin*');
+  h += fld('flight_land', 'fltDest', '', data ? data.destination : '', 'Destination*');
+  h += '</div>';
+  h += '<div class="form-row">';
+  var dr = tripDateRange();
+  h += fld('event', 'fltDate', 'date', fltDateVal, 'Date', ' min="' + dr.min + '" max="' + dr.max + '"');
+  h += fld('confirmation_number', 'fltNo', '', data ? data.flightNo : '', 'Flight No');
+  h += '</div>';
+  h += '<div class="form-row">';
+  h += fld('schedule', 'fltDep', 'time', data ? formatTime(data.departure) : '', 'Depart', ' onchange="autoFltDuration()"');
+  h += fld('schedule', 'fltArr', 'time', data ? formatTime(data.arrival) : '', 'Arrive', ' onchange="autoFltDuration()"');
+  h += fld('timer', 'fltDur', '', data ? data.duration || '' : '', 'Duration');
+  h += '</div>';
+  h += '<div class="form-row">';
+  h += fld('receipt', 'fltRef', '', data ? data.bookingRef || '' : '', 'Booking Ref');
+  h += fld('link', 'fltAirline', '', data ? data.airline || '' : '', 'Airline URL');
+  h += '</div>';
+  return h;
+}
+
+function openFlightForm() {
+  resetAllSwipes();
+  var h = _buildFlightFormHtml(null);
+  h += '<button class="form-btn form-btn-primary" onclick="saveNewFlight()">Save</button>';
+  openFormModal('Add Flight', h);
+}
+
+function openFlightEditForm(sheetRow) {
+  resetAllSwipes();
+  var f = (appData.flights || []).find(function(x) { return x.row === sheetRow; });
+  if (!f) return;
+  var h = _buildFlightFormHtml(f);
+  h += '<button class="form-btn form-btn-primary" onclick="saveEditFlight(' + sheetRow + ')">Save</button>';
+  openFormModal('Edit Flight', h);
+}
+
+function _getFlightFormValues() {
+  return {
+    date: document.getElementById('fltDate').value,
+    departure: document.getElementById('fltDep').value,
+    origin: document.getElementById('fltOrigin').value,
+    arrival: document.getElementById('fltArr').value,
+    destination: document.getElementById('fltDest').value,
+    duration: document.getElementById('fltDur').value,
+    flightNo: document.getElementById('fltNo').value,
+    bookingRef: document.getElementById('fltRef').value,
+    airline: document.getElementById('fltAirline').value
+  };
+}
+
+function saveNewFlight() {
+  var v = _getFlightFormValues();
+  if (!v.origin.trim()) { warnToast('Origin is required'); return; }
+  if (!v.destination.trim()) { warnToast('Destination is required'); return; }
+  setFormSaving(true);
+  startSync();
+  appData.flights.push({ row: -1, trip: selectedTrip, date: v.date, departure: v.departure, origin: v.origin, arrival: v.arrival, destination: v.destination, duration: v.duration, flightNo: v.flightNo, bookingRef: v.bookingRef, airline: v.airline });
+  closeFormModal(); renderTripTab(); crudToast('added', 'Flight');
+  google.script.run.withSuccessHandler(function() { endSync(true); }).withFailureHandler(function(err) { endSync(false); failToast(err); refreshData(); })
+    .addFlight(selectedTrip, v.date, v.departure, v.origin, v.arrival, v.destination, v.duration, v.flightNo, v.bookingRef, v.airline);
+}
+
+function saveEditFlight(sheetRow) {
+  var v = _getFlightFormValues();
+  if (!v.origin.trim()) { warnToast('Origin is required'); return; }
+  if (!v.destination.trim()) { warnToast('Destination is required'); return; }
+  setFormSaving(true);
+  startSync();
+  var f = (appData.flights || []).find(function(x) { return x.row === sheetRow; });
+  if (f) { Object.assign(f, v); }
+  closeFormModal(); renderTripTab(); crudToast('updated', 'Flight');
+  google.script.run.withSuccessHandler(function() { endSync(true); }).withFailureHandler(function(err) { endSync(false); failToast(err); refreshData(); })
+    .editFlight(sheetRow, v.date, v.departure, v.origin, v.arrival, v.destination, v.duration, v.flightNo, v.bookingRef, v.airline);
+}
+
+function confirmDeleteFlight(sheetRow) {
+  resetAllSwipes();
+  showConfirm('Delete this flight?', function() {
+    startSync();
+    appData.flights = appData.flights.filter(function(x) { return x.row !== sheetRow; });
+    renderTripTab(); crudToast('deleted', 'Flight');
+    google.script.run.withSuccessHandler(function() { endSync(true); }).withFailureHandler(function(err) { endSync(false); failToast(null, 'delete'); refreshData(); })
+      .deleteFlight(sheetRow);
+  });
+}
+
+// ===== Flight auto-duration =====
+function autoFltDuration() {
+  var dep = document.getElementById('fltDep').value;
+  var arr = document.getElementById('fltArr').value;
+  if (dep && arr) {
+    var dur = calcDuration(dep, arr);
+    if (dur) document.getElementById('fltDur').value = dur;
+  }
+}
+
+// ===== Day Plan Add Form =====
+function openDayPlanForm() {
+  resetAllSwipes();
+  var dr = tripDateRange();
+  var h = '';
+  h += fld('event', 'dpDate', 'date', defaultFormDate(), 'Date*', ' min="' + dr.min + '" max="' + dr.max + '"');
+  h += fld('route', 'dpItin', '', '', 'Itinerary');
+  h += fld('place', 'dpAttr', '', '', 'Attractions');
+  h += '<div class="form-row">';
+  h += fld('straighten', 'dpDist', '', '', 'Distance (km)', ' inputmode="decimal" oninput="cleanCostInput(this)"');
+  h += fld('terrain', 'dpAsc', '', '', 'Ascent (m)', ' inputmode="decimal" oninput="cleanCostInput(this)"');
+  h += '</div>';
+  h += '<div class="form-row">';
+  h += fld('hotel', 'dpHotel', '', '', 'Hotel');
+  h += fld('link', 'dpUrl', '', '', 'URL');
+  h += '</div>';
+  h += '<div class="form-row">';
+  h += fld(currency, 'dpCost', '', '', 'Local', ' inputmode="decimal" oninput="cleanCostInput(this)" onchange="dpConvertCost(\'local\')"');
+  h += fld('$', 'dpHK', '', '', 'HKD', ' inputmode="decimal" oninput="cleanCostInput(this)" onchange="dpConvertCost(\'hk\')"');
+  h += '</div>';
+  if (currentTrip.exchangeRate) h += '<div class="form-rate">' + currency + '1 = $' + currentTrip.exchangeRate + '</div>';
+  h += fld('sticky_note_2', 'dpNote', '', '', 'Note');
+  h += '<button class="form-btn form-btn-primary" onclick="saveNewDayPlan()">Save</button>';
+  openFormModal('Add Plan', h);
+}
+
+function dpConvertCost(from) {
+  var rate = parseFloat(currentTrip.exchangeRate);
+  if (!rate) return;
+  if (from === 'local') {
+    var other = document.getElementById('dpHK');
+    if (other.value.trim()) return;
+    var local = parseFloat(document.getElementById('dpCost').value);
+    if (!isNaN(local) && local > 0) other.value = Math.round(local * rate * 100) / 100;
+  } else {
+    var other = document.getElementById('dpCost');
+    if (other.value.trim()) return;
+    var hk = parseFloat(document.getElementById('dpHK').value);
+    if (!isNaN(hk) && hk > 0 && rate > 0) other.value = Math.round(hk / rate * 100) / 100;
+  }
+}
+
+function saveNewDayPlan() {
+  var date = document.getElementById('dpDate').value;
+  if (!date) { warnToast('Date is required'); return; }
+  var itinerary = document.getElementById('dpItin').value;
+  var attractions = document.getElementById('dpAttr').value;
+  var distance = document.getElementById('dpDist').value;
+  var ascent = document.getElementById('dpAsc').value;
+  var hotel = document.getElementById('dpHotel').value;
+  var costVal = parseCost(document.getElementById('dpCost').value) || '';
+  var hkVal = parseCost(document.getElementById('dpHK').value) || '';
+  var url = document.getElementById('dpUrl').value;
+  var note = document.getElementById('dpNote').value;
+
+  setFormSaving(true);
+  startSync();
+  appData.plans.push({
+    row: -1, trip: selectedTrip, date: date, itinerary: itinerary, attractions: attractions,
+    distance: distance, ascent: ascent, accommodation: hotel,
+    localCost: costVal ? currency + costVal : '', hkCost: hkVal ? '$' + hkVal : '', url: url, note: note
+  });
+  closeFormModal();
+  renderTripTab();
+  crudToast('added', 'Plan');
+
+  google.script.run
+    .withSuccessHandler(function() { endSync(true); })
+    .withFailureHandler(function(err) { endSync(false); failToast(err); refreshData(); })
+    .addDayPlan(selectedTrip, date, itinerary, attractions, distance, ascent, hotel, costVal ? currency + costVal : '', hkVal ? '$' + hkVal : '', url, note);
+}
+
+// ===== Day Plan Edit Form =====
+function openDayPlanEditForm(sheetRow) {
+  var p = currentPlans.find(function(x) { return x.row === sheetRow; });
+  if (!p) return;
+  var dpDateVal = p.date.toString().match(/^\d{4}-/) ? p.date : displayDateToISO(p.date, currentTrip.start);
+  var dr = tripDateRange();
+
+  var h = '';
+  h += '<div class="form-row">';
+  h += fld('event', 'dpDate', 'date', dpDateVal, 'Date', ' min="' + dr.min + '" max="' + dr.max + '"');
+  h += fld('route', 'dpItin', '', p.itinerary || '', 'Itinerary');
+  h += '</div>';
+  h += fld('place', 'dpAttr', '', p.attractions || '', 'Attractions');
+  h += '<div class="form-row">';
+  h += fld('straighten', 'dpDist', '', p.distance || '', 'Distance (km)', ' inputmode="decimal" oninput="cleanCostInput(this)"');
+  h += fld('terrain', 'dpAsc', '', p.ascent || '', 'Ascent (m)', ' inputmode="decimal" oninput="cleanCostInput(this)"');
+  h += '</div>';
+  h += '<div class="form-row">';
+  h += fld('hotel', 'dpHotel', '', p.accommodation || '', 'Hotel');
+  h += fld('link', 'dpUrl', '', p.url || '', 'URL');
+  h += '</div>';
+  h += '<div class="form-row">';
+  var hasLocal = p.localCost && parseCost(p.localCost);
+  var hasHK = p.hkCost && parseCost(p.hkCost);
+  h += fld(currency, 'dpCost', '', hasLocal || '', 'Local', ' inputmode="decimal" oninput="cleanCostInput(this)" onchange="dpConvertCost(\'local\')"');
+  h += fld('$', 'dpHK', '', hasHK || '', 'HKD', ' inputmode="decimal" oninput="cleanCostInput(this)" onchange="dpConvertCost(\'hk\')"');
+  h += '</div>';
+  if (currentTrip.exchangeRate) h += '<div class="form-rate">' + currency + '1 = $' + currentTrip.exchangeRate + '</div>';
+  h += fld('sticky_note_2', 'dpNote', '', p.note || '', 'Note');
+  h += '<button class="form-btn form-btn-primary" onclick="saveDayPlan(' + sheetRow + ')">Save</button>';
+  openFormModal('Edit Plan', h);
+}
+
+function saveDayPlan(sheetRow) {
+  var date = document.getElementById('dpDate').value;
+  var itinerary = document.getElementById('dpItin').value;
+  var attractions = document.getElementById('dpAttr').value;
+  var distance = document.getElementById('dpDist').value;
+  var ascent = document.getElementById('dpAsc').value;
+  var hotel = document.getElementById('dpHotel').value;
+  var cost = parseCost(document.getElementById('dpCost').value) || '';
+  var hkCost = parseCost(document.getElementById('dpHK').value) || '';
+  var url = document.getElementById('dpUrl').value;
+  var note = document.getElementById('dpNote').value;
+
+  setFormSaving(true);
+  startSync();
+  var p = currentPlans.find(function(x) { return x.row === sheetRow; });
+  if (p) {
+    p.date = date; p.itinerary = itinerary; p.attractions = attractions;
+    p.distance = distance; p.ascent = ascent;
+    p.accommodation = hotel; p.localCost = cost; p.url = url; p.note = note;
+  }
+  closeFormModal(); renderTripTab(); crudToast('updated', 'Plan');
+  google.script.run.withSuccessHandler(function() { endSync(true); }).withFailureHandler(function(err) { endSync(false); failToast(err); refreshData(); })
+    .editDayPlan(sheetRow, date, itinerary, attractions, distance, ascent, hotel, cost, hkCost ? '$' + hkCost : '', url, note);
+}
+
+function confirmDeleteDayPlan(sheetRow) {
+  showConfirm('Delete this day plan row?', function() {
+    startSync();
+    currentPlans = currentPlans.filter(function(x) { return x.row !== sheetRow; });
+    appData.plans = appData.plans.filter(function(x) { return x.row !== sheetRow; });
+    renderTripTab(); crudToast('deleted', 'Plan');
+    google.script.run.withSuccessHandler(function() { endSync(true); }).withFailureHandler(function(err) { endSync(false); failToast(null, 'delete'); refreshData(); })
+      .deleteDayPlan(sheetRow);
+  });
+}
+
+// ===== Info Forms =====
+function openInfoForm() {
+  resetAllSwipes();
+  var h = '';
+  h += fld('link', 'infoUrl', '', '', 'URL*');
+  h += fld('label', 'infoItem', '', '', 'Title');
+  h += '<button class="form-btn form-btn-primary" onclick="saveNewInfo()">Save</button>';
+  openFormModal('Add Info', h);
+}
+
+function openInfoEditForm(sheetRow) {
+  resetAllSwipes();
+  var inf = (appData.info || []).find(function(x) { return x.row === sheetRow; });
+  if (!inf) return;
+  var h = '';
+  h += fld('link', 'infoUrl', '', inf.url || '', 'URL*');
+  h += fld('label', 'infoItem', '', inf.item, 'Title');
+  h += '<button class="form-btn form-btn-primary" onclick="saveEditInfo(' + sheetRow + ')">Save</button>';
+  openFormModal('Edit Info', h);
+}
+
+function saveNewInfo() {
+  var url = document.getElementById('infoUrl').value;
+  if (!url.trim()) { warnToast('URL required'); return; }
+  var item = document.getElementById('infoItem').value;
+  setFormSaving(true);
+  startSync();
+  appData.info.push({ row: -1, trip: selectedTrip, item: item, url: url });
+  closeFormModal(); renderTripTab(); crudToast('added', 'Info');
+  google.script.run.withSuccessHandler(function() { endSync(true); }).withFailureHandler(function(err) { endSync(false); failToast(err); refreshData(); })
+    .addInfo(selectedTrip, item, url);
+}
+
+function saveEditInfo(sheetRow) {
+  var url = document.getElementById('infoUrl').value;
+  if (!url.trim()) { warnToast('URL required'); return; }
+  var item = document.getElementById('infoItem').value;
+  setFormSaving(true);
+  startSync();
+  var inf = (appData.info || []).find(function(x) { return x.row === sheetRow; });
+  if (inf) { inf.item = item; inf.url = url; }
+  closeFormModal(); renderTripTab(); crudToast('updated', 'Info');
+  google.script.run.withSuccessHandler(function() { endSync(true); }).withFailureHandler(function(err) { endSync(false); failToast(err); refreshData(); })
+    .editInfo(sheetRow, item, url);
+}
+
+function confirmDeleteInfo(sheetRow) {
+  resetAllSwipes();
+  showConfirm('Delete this info?', function() {
+    startSync();
+    appData.info = appData.info.filter(function(x) { return x.row !== sheetRow; });
+    renderTripTab(); crudToast('deleted', 'Info');
+    google.script.run.withSuccessHandler(function() { endSync(true); }).withFailureHandler(function(err) { endSync(false); failToast(null, 'delete'); refreshData(); })
+      .deleteInfo(sheetRow);
+  });
+}
+
+// ===== Delete Trip =====
+function confirmDeleteTrip() {
+  var tripName = currentTrip.trip;
+  showConfirm("Delete '" + tripName + "' and ALL its data? This cannot be undone.", function() {
+    startSync();
+    appData.trips = appData.trips.filter(function(t) { return t.trip !== tripName; });
+    appData.plans = appData.plans.filter(function(p) { return p.trip !== tripName; });
+    appData.itinerary = appData.itinerary.filter(function(it) { return it.trip !== tripName; });
+    appData.flights = appData.flights.filter(function(f) { return f.trip !== tripName; });
+    appData.info = appData.info.filter(function(i) { return i.trip !== tripName; });
+    appData.expenses = appData.expenses.filter(function(e) { return e.trip !== tripName; });
+    if (appData.trips.length > 0) {
+      selectedTrip = appData.trips[0].trip;
+      saveSelectedTrip(selectedTrip);
+    } else {
+      selectedTrip = '';
+    }
+    renderApp();
+    crudToast('deleted', 'Trip');
+
+    google.script.run
+      .withSuccessHandler(function() { endSync(true); refreshData(); })
+      .withFailureHandler(function(err) { endSync(false); failToast(null, 'delete trip'); refreshData(); })
+      .deleteTrip(tripName);
+  });
+}
+
+// ===== Trip Modal =====
+function openTripModal() {
+  var html = '';
+  var sortedTrips = appData.trips.slice().sort(function(a, b) {
+    return (b.start || '').localeCompare(a.start || '');
+  });
+  sortedTrips.forEach(function(t) {
+    var sel = t.trip === selectedTrip ? ' selected' : '';
+    var days = daysBetween(t.start, t.end);
+    var check = t.trip === selectedTrip ? '<span class="material-icons-round">check</span>' : '';
+    var cur = (t.currency || '').slice(-1);
+    var plans = appData.plans.filter(function(p) { return p.trip === t.trip; });
+    var dist = 0, hotel = 0;
+    plans.forEach(function(p) {
+      if (p.distance) dist += parseFloat(p.distance) || 0;
+      hotel += parseCost(p.localCost);
+    });
+    var meta = formatDateShort(t.start) + ' - ' + formatDateShort(t.end) + ' \u00B7 ' + days + 'd';
+    if (dist > 0) meta += ' \u00B7 ' + Math.round(dist) + 'km';
+    if (t.exchangeRate) meta += ' \u00B7 ' + t.exchangeRate;
+
+    html += '<div class="trip-modal-item' + sel + '" onclick="selectTrip(\'' + escAttr(t.trip) + '\')">';
+    var tFlag = t.flag;
+    if (tFlag) html += '<img class="trip-modal-item-flag" src="' + escAttr(tFlag) + '" alt="">';
+    html += '<div class="trip-modal-item-info">';
+    html += '<div class="trip-modal-item-name">' + esc(t.trip) + '</div>';
+    html += '<div class="trip-modal-item-dates">' + meta + '</div>';
+    html += '</div>';
+    html += check;
+    html += '</div>';
+  });
+  document.getElementById('tripModalList').innerHTML = html;
+  document.getElementById('tripModal').classList.add('active');
+  history.pushState({ tripModalOpen: true }, '');
+}
+
+function closeTripModal() {
+  document.getElementById('tripModal').classList.remove('active');
+  if (history.state && history.state.tripModalOpen) history.back();
+}
+
+function selectTrip(tripName) {
+  selectedTrip = tripName;
+  saveSelectedTrip(tripName);
+  closeTripModal();
+  renderApp();
+  scrollToTop();
+}
+</script>
+
+<script>
+// ===== Itinerary Tab =====
+function renderItineraryTab() {
+
+  var tripItinerary = appData.itinerary.filter(function(it) { return it.trip === selectedTrip; });
+  // Normalize dates for comparison using shortDate (M/D)
+  function normDate(d) { return shortDate(d); }
+  var planDateNorms = currentPlans.map(function(p) { return normDate(p.date); });
+  var orphanItems = tripItinerary.filter(function(it) { return planDateNorms.indexOf(normDate(it.date)) === -1; });
+
+  function dateNum(d) { var s = shortDate(d); var p = s.split('/'); return parseInt(('0' + p[0]).slice(-2) + ('0' + (p[1]||0)).slice(-2)); }
+  var firstPlanNum = currentPlans.length > 0 ? dateNum(currentPlans[0].date) : 9999;
+
+  var dayItems = [];
+  currentPlans.forEach(function(plan) {
+    var planNorm = normDate(plan.date);
+    var items = tripItinerary.filter(function(it) { return normDate(it.date) === planNorm; });
+    items.sort(function(a, b) {
+      var at = formatTime(a.start) || '99:99';
+      var bt = formatTime(b.start) || '99:99';
+      return at.localeCompare(bt);
+    });
+    dayItems.push({ plan: plan, items: items });
+  });
+
+  orphanItems.forEach(function(it) {
+    if (dayItems.length === 0) return;
+    if (dateNum(it.date) < firstPlanNum) {
+      dayItems[0].items.push(it);
+    } else {
+      dayItems[dayItems.length - 1].items.push(it);
+    }
+  });
+
+  dayItems.forEach(function(d) {
+    d.items.sort(function(a, b) {
+      var adn = dateNum(a.date), bdn = dateNum(b.date);
+      if (adn !== bdn) return adn - bdn;
+      var am = timeToMin(a.start), bm = timeToMin(b.start);
+      return am - bm;
+    });
+  });
+
+  // Day nav + add button
+  var navHtml = '';
+  _itinTodayIdx = -1;
+  var now = nowTime();
+  dayItems.forEach(function(d, i) {
+    var sd = shortDate(d.plan.date);
+    var todayCls = isToday(d.plan.date) ? ' is-today' : '';
+    if (isToday(d.plan.date)) _itinTodayIdx = i;
+    navHtml += '<button class="sub-nav-item' + todayCls + '" onclick="scrollToDay(' + i + ')" id="dayNavBtn' + i + '">' + sd + '</button>';
+  });
+  document.getElementById('dayNav').innerHTML = navHtml;
+
+  // Render days
+  var html = '';
+  dayItems.forEach(function(day, idx) {
+    var plan = day.plan;
+    var items = day.items;
+    var dayIsToday = isToday(plan.date);
+    var dayIsPast = !dayIsToday && displayDateToISO(plan.date, currentTrip.start) < todayISO();
+    var foundNow = false;
+
+    html += '<div class="card day-section' + (dayIsToday ? ' is-today' : '') + '" id="day' + idx + '">';
+    html += '<div class="day-section-header" onclick="toggleAttractions(' + idx + ')">';
+    html += '<div class="day-section-row1">';
+    html += '<span class="day-section-date">' + esc(displayDate(plan.date)) + '</span>';
+    if (plan.itinerary) html += '<span class="day-section-itin">' + esc(plan.itinerary) + '</span>';
+    if (plan.distance) html += '<span class="plan-distance-right">' + esc(plan.distance) + 'km' + (plan.ascent ? ' ↑' + esc(plan.ascent) : '') + '</span>';
+    html += '</div>';
+    if (plan.accommodation) {
+      html += '<div class="day-section-row2">';
+      var hotelName = '<span class="material-icons-round" style="font-size:12px;vertical-align:-1px;">hotel</span> ' + esc(plan.accommodation);
+      if (plan.url && plan.url.trim()) {
+        html += '<a class="day-section-hotel day-section-hotel-link" href="' + escAttr(plan.url) + '" target="_blank" rel="noopener" onclick="event.stopPropagation();">' + hotelName + '</a>';
+      } else {
+        html += '<span class="day-section-hotel">' + hotelName + '</span>';
+      }
+      if (plan.localCost) html += '<span class="day-section-cost">' + currency + formatNum(parseCost(plan.localCost)) + '</span>';
+      html += '</div>';
+    }
+    var hasExpand = plan.note || plan.attractions;
+    if (hasExpand) {
+      html += '<div class="day-section-expand-content" id="attr' + idx + '" style="display:none;">';
+      if (plan.note) html += '<div class="day-section-note"><span class="material-icons-round" style="font-size:12px;vertical-align:-1px;">sticky_note_2</span> ' + esc(plan.note) + '</div>';
+      if (plan.attractions) html += '<div class="day-section-attractions">' + esc(plan.attractions) + '</div>';
+      html += '</div>';
+    }
+    html += '</div>';
+
+    items.forEach(function(it) {
+      var isImp = it.important && it.important.toString().trim() !== '';
+      // removed isDiffDate badge — orphan items merged silently
+      // Today/now highlighting
+      var nowCls = '';
+      if (dayIsToday) {
+        var endT = formatTime(it.end) || '99:99';
+        var startT = formatTime(it.start) || '00:00';
+        if (endT <= now && endT !== '') { nowCls = ' is-past'; }
+        else if (startT <= now && !foundNow) { nowCls = ' is-now'; foundNow = true; }
+      } else if (dayIsPast) {
+        nowCls = ' is-past';
+      }
+      var cls = 'timeline-row' + (isImp ? ' important' : '') + nowCls;
+      var hasCost = (it.localCost && it.localCost.toString().trim()) || (it.hkCost && it.hkCost.toString().trim());
+      var hasLink = it.url && it.url.toString().trim();
+      var costVal = '';
+      if (hasCost) costVal = it.localCost && it.localCost.toString().trim() ? currency + formatNum(parseCost(it.localCost)) : '$' + formatNum(parseCost(it.hkCost));
+
+      // Swipe container for owner
+      if (isOwner) {
+        html += '<div class="swipe-container">';
+        html += '<div class="swipe-actions">';
+        var impIcon = (it.important && it.important.toString().trim()) ? 'star' : 'star_outline';
+        html += '<button class="swipe-btn swipe-btn-edit" onclick="openItinEditForm(' + it.row + ')"><span class="material-icons-round">edit</span></button>';
+        html += '<button class="swipe-btn" style="background:#D69E2E;" onclick="toggleItinImportant(' + it.row + ')"><span class="material-icons-round">' + impIcon + '</span></button>';
+        html += '<button class="swipe-btn swipe-btn-delete" onclick="confirmDeleteItin(' + it.row + ')"><span class="material-icons-round">delete</span></button>';
+        html += '</div>';
+        html += '<div class="swipe-content">';
+      }
+
+      html += '<div class="' + cls + '">';
+      var timeStr = formatTime(it.start);
+      if (it.end) timeStr += '-' + formatTime(it.end);
+      var dateBadge = '';
+      html += '<div class="timeline-event-row">';
+      html += '<span class="timeline-time">' + timeStr + dateBadge + '</span>';
+      html += '<span class="timeline-event">' + esc(it.event || '-') + '</span>';
+      if (hasCost) html += '<span class="timeline-cost">' + costVal + '</span>';
+      html += '</div>';
+      if (it.detail || hasLink) {
+        html += '<div class="timeline-detail-row">';
+        html += '<span class="timeline-detail">' + (it.detail ? esc(it.detail) : '') + '</span>';
+        if (hasLink) html += '<a class="timeline-link-btn" href="' + escAttr(it.url) + '" target="_blank" rel="noopener" onclick="event.stopPropagation();"><span class="material-icons-round">link</span></a>';
+        html += '</div>';
+      }
+      html += '</div>';
+
+      if (isOwner) {
+        html += '</div></div>'; // close swipe-content + swipe-container
+      }
+    });
+
+    if (items.length === 0 && !plan.itinerary) {
+      html += '<div class="empty-state">No itinerary yet</div>';
+    }
+    html += '</div>';
+  });
+
+  document.getElementById('daysContent').innerHTML = html;
+  if (dayItems.length > 0) highlightDayNav(0);
+
+  // Init swipe on rendered rows
+  if (isOwner) {
+    var container = document.getElementById('daysContent');
+    if (container) initSwipeRows(container);
+  }
+
+  // Auto-scroll to today when tab is shown
+  if (_itinTodayIdx >= 0) {
+    setTimeout(function() { scrollToDay(_itinTodayIdx); }, 300);
+  }
+}
+
+// ===== Itinerary Form =====
+function _buildItinFormHtml(data) {
+  var dateVal = '';
+  if (data && data.date) {
+    dateVal = data.date.match(/^\d{4}-/) ? data.date : displayDateToISO(data.date, currentTrip.start);
+  } else {
+    dateVal = defaultFormDate();
+  }
+
+  var h = '';
+  var dr = tripDateRange();
+  h += fld('event', 'itinDate', 'date', dateVal, 'Date*', ' min="' + dr.min + '" max="' + dr.max + '"');
+  h += '<div class="form-row">';
+  h += fld('schedule', 'itinStart', 'time', data ? formatTime(data.start) : '', 'From*', ' onchange="autoItinDuration()"');
+  h += fld('schedule', 'itinEnd', 'time', data ? formatTime(data.end) : '', 'To*', ' onchange="autoItinDuration()"');
+  var initDur = (data && data.start && data.end) ? calcDuration(formatTime(data.start), formatTime(data.end)) : '';
+  h += fld('timer', 'itinDur', '', initDur, 'Dur.');
+  h += '</div>';
+  h += fld('edit_note', 'itinEvent', '', data ? data.event : '', 'Event*');
+  h += fld('notes', 'itinDetail', '', data ? data.detail : '', 'Detail', ' style="min-height:56px"');
+  h += '<div class="form-row">';
+  var hasItinLocal = data && data.localCost && parseCost(data.localCost);
+  var hasItinHK = data && data.hkCost && parseCost(data.hkCost);
+  h += fld(currency, 'itinLocal', '', hasItinLocal || '', 'Local', ' inputmode="decimal" oninput="cleanCostInput(this)" onchange="itinConvertCost(\'local\')"');
+  h += fld('$', 'itinHK', '', hasItinHK || '', 'HKD', ' inputmode="decimal" oninput="cleanCostInput(this)" onchange="itinConvertCost(\'hk\')"');
+  h += '<div class="form-group" style="flex:0;align-self:center;"><label class="form-toggle' + (data && data.important ? ' active' : '') + '" id="itinImpToggle" onclick="this.classList.toggle(\'active\')">';
+  h += '<span class="material-icons-round">' + (data && data.important ? 'star' : 'star_outline') + '</span></label></div>';
+  h += '</div>';
+  if (currentTrip.exchangeRate) {
+    h += '<div class="form-rate">' + currency + '1 = $' + parseFloat(currentTrip.exchangeRate) + '</div>';
+  }
+  h += fld('link', 'itinUrl', '', data ? data.url || '' : '', 'URL');
+  return h;
+}
+
+function itinConvertCost(from) {
+  var rate = parseFloat(currentTrip.exchangeRate);
+  if (!rate) return;
+  if (from === 'local') {
+    var other = document.getElementById('itinHK');
+    if (other.value.trim()) return;
+    var local = parseFloat(document.getElementById('itinLocal').value);
+    if (!isNaN(local) && local > 0) {
+      other.value = Math.round(local * rate * 100) / 100;
+    }
+  } else {
+    var other = document.getElementById('itinLocal');
+    if (other.value.trim()) return;
+    var hk = parseFloat(document.getElementById('itinHK').value);
+    if (!isNaN(hk) && hk > 0 && rate > 0) {
+      other.value = Math.round(hk / rate * 100) / 100;
+    }
+  }
+}
+
+function _getItinFormValues() {
+  var impEl = document.getElementById('itinImpToggle');
+  return {
+    date: document.getElementById('itinDate').value,
+    start: document.getElementById('itinStart').value,
+    end: document.getElementById('itinEnd').value,
+    event: document.getElementById('itinEvent').value,
+    detail: document.getElementById('itinDetail').value,
+    localCost: parseCost(document.getElementById('itinLocal').value) || '',
+    hkCost: parseCost(document.getElementById('itinHK').value) || '',
+    url: document.getElementById('itinUrl').value,
+    important: impEl && impEl.classList.contains('active') ? '!' : ''
+  };
+}
+
+function openItinForm() {
+  resetAllSwipes();
+  var h = _buildItinFormHtml(null);
+  h += '<button class="form-btn form-btn-primary" onclick="saveNewItin()">Save</button>';
+  openFormModal('Add Event', h);
+}
+
+function openItinEditForm(sheetRow) {
+  resetAllSwipes();
+  var it = appData.itinerary.find(function(x) { return x.row === sheetRow; });
+  if (!it) return;
+  var h = _buildItinFormHtml(it);
+  h += '<button class="form-btn form-btn-primary" onclick="saveEditItin(' + sheetRow + ')">Save</button>';
+  openFormModal('Edit Event', h);
+}
+
+function autoItinDuration() {
+  var s = document.getElementById('itinStart').value;
+  var e = document.getElementById('itinEnd').value;
+  var dur = calcDuration(s, e);
+  var el = document.getElementById('itinDur');
+  if (el) el.value = dur;
+}
+
+function calcDuration(start, end) {
+  if (!start || !end) return '';
+  var sp = start.split(':'), ep = end.split(':');
+  if (sp.length < 2 || ep.length < 2) return '';
+  var sm = parseInt(sp[0]) * 60 + parseInt(sp[1]);
+  var em = parseInt(ep[0]) * 60 + parseInt(ep[1]);
+  if (em <= sm) em += 24 * 60; // next day
+  var diff = em - sm;
+  var h = Math.floor(diff / 60), m = diff % 60;
+  return h + ':' + ('0' + m).slice(-2);
+}
+
+function saveNewItin() {
+  var v = _getItinFormValues();
+  if (!v.date) { warnToast('Date is required'); return; }
+  if (!v.start) { warnToast('Start time is required'); return; }
+  if (!v.end) { warnToast('End time is required'); return; }
+  if (!v.event.trim()) { warnToast('Event name required'); return; }
+  var duration = calcDuration(v.start, v.end);
+
+  setFormSaving(true); startSync();
+  appData.itinerary.push({
+    row: -1, trip: selectedTrip, date: v.date, start: v.start, end: v.end,
+    duration: duration, event: v.event, detail: v.detail,
+    localCost: v.localCost, hkCost: v.hkCost, url: v.url, important: v.important
+  });
+  closeFormModal();
+  renderItineraryTab();
+  crudToast('added', 'Event');
+
+  google.script.run
+    .withSuccessHandler(function() { endSync(true); })
+    .withFailureHandler(function(err) { endSync(false); failToast(err); refreshData(); })
+    .addItinerary(selectedTrip, v.date, v.start, v.end, duration, v.event, v.detail, v.localCost, v.hkCost, v.url, v.important);
+}
+
+function saveEditItin(sheetRow) {
+  if (!sheetRow || sheetRow < 1) { warnToast('Please refresh and try again'); return; }
+  var v = _getItinFormValues();
+  if (!v.date) { warnToast('Date is required'); return; }
+  if (!v.start) { warnToast('Start time is required'); return; }
+  if (!v.end) { warnToast('End time is required'); return; }
+  if (!v.event.trim()) { warnToast('Event name required'); return; }
+  var duration = calcDuration(v.start, v.end);
+
+  setFormSaving(true); startSync();
+  var it = appData.itinerary.find(function(x) { return x.row === sheetRow; });
+  if (it) {
+    it.date = v.date; it.start = v.start; it.end = v.end;
+    it.event = v.event; it.detail = v.detail;
+    it.localCost = v.localCost; it.hkCost = v.hkCost;
+    it.url = v.url; it.important = v.important;
+  }
+  closeFormModal();
+  renderItineraryTab();
+  crudToast('updated', 'Event');
+
+  google.script.run
+    .withSuccessHandler(function() { endSync(true); })
+    .withFailureHandler(function(err) { endSync(false); failToast(err); refreshData(); })
+    .editItinerary(sheetRow, v.date, v.start, v.end, duration, v.event, v.detail, v.localCost, v.hkCost, v.url, v.important);
+}
+
+function toggleItinImportant(sheetRow) {
+  resetAllSwipes();
+  var it = appData.itinerary.find(function(x) { return x.row === sheetRow; });
+  if (!it) return;
+  var wasImp = it.important && it.important.toString().trim();
+  it.important = wasImp ? '' : '!';
+  renderItineraryTab();
+  startSync();
+  google.script.run
+    .withSuccessHandler(function() { endSync(true); })
+    .withFailureHandler(function(err) { endSync(false); failToast(); it.important = wasImp ? '!' : ''; renderItineraryTab(); })
+    .editItinerary(sheetRow, it.date, it.start, it.end, it.duration || '', it.event, it.detail, it.localCost, it.hkCost, it.url, it.important);
+}
+
+function confirmDeleteItin(sheetRow) {
+  resetAllSwipes();
+  showConfirm('Delete this event?', function() {
+    startSync();
+    appData.itinerary = appData.itinerary.filter(function(x) { return x.row !== sheetRow; });
+    renderItineraryTab();
+    crudToast('deleted', 'Event');
+
+    google.script.run
+      .withSuccessHandler(function() { endSync(true); })
+      .withFailureHandler(function(err) { endSync(false); failToast(null, 'delete'); refreshData(); })
+      .deleteItinerary(sheetRow);
+  });
+}
+
+// ===== Attractions Toggle =====
+function toggleAttractions(idx) {
+  var attr = document.getElementById('attr' + idx);
+  if (!attr) return;
+  attr.style.display = attr.style.display === 'none' ? '' : 'none';
+}
+</script>
+
+<script>
+// ===== Expenses Tab =====
+
+function renderExpensesTab() {
+  var expenses = (appData.expenses || []).filter(function(e) { return e.trip === selectedTrip; });
+
+  var cats = {};
+  var totalHK = 0;
+  expenses.forEach(function(e) {
+    var cat = e.category || 'Others';
+    if (!cats[cat]) cats[cat] = { total: 0, items: [] };
+    var amt = parseCost(e.hkCost);
+    cats[cat].total += amt;
+    cats[cat].items.push(e);
+    totalHK += amt;
+  });
+
+  var catKeys = Object.keys(cats).sort(function(a, b) { return cats[b].total - cats[a].total; });
+  var maxCat = catKeys.length > 0 ? cats[catKeys[0]].total : 1;
+
+  var shtml = '<div class="section-title"><span class="material-icons-round">attach_money</span> Expenses<span class="section-title-badge">$' + formatNum(totalHK) + '</span></div>';
+  shtml += '<div class="card card-padded">';
+  catKeys.forEach(function(cat, ci) {
+    var icon = catIcons[cat] || 'label';
+    var pct = maxCat > 0 ? Math.round((cats[cat].total / maxCat) * 100) : 0;
+    var catCol = catColors[cat] || '#94A3B8';
+    shtml += '<div class="exp-bar-row" onclick="scrollToExpCat(' + ci + ')" style="cursor:pointer;">';
+    shtml += '<div class="exp-bar-label"><span class="material-icons-round" style="color:' + catCol + '">' + icon + '</span></div>';
+    shtml += '<div class="exp-bar-track"><div class="exp-bar-fill" style="width:' + pct + '%;background:' + catCol + '"></div></div>';
+    shtml += '<div class="exp-bar-amt">$' + formatNum(cats[cat].total) + '</div>';
+    shtml += '</div>';
+  });
+  shtml += '</div>';
+  document.getElementById('expSummary').innerHTML = shtml;
+
+  var lhtml = '';
+  if (expenses.length === 0) {
+    lhtml = '<div class="card empty-state">No expenses yet</div>';
+  }
+  catKeys.forEach(function(cat, ci) {
+    var icon = catIcons[cat] || 'label';
+    var catId = 'expCat' + ci;
+    lhtml += '<div class="card" id="expCatCard' + ci + '">';
+    var catCol = catColors[cat] || '#94A3B8';
+    lhtml += '<div class="group-header" onclick="document.getElementById(\'' + catId + '\').classList.toggle(\'collapsed\')" style="border-bottom-color:' + catCol + '">';
+    lhtml += '<span class="material-icons-round" style="color:' + catCol + '">' + icon + '</span>';
+    lhtml += '<span class="group-header-name">' + esc(cat) + '</span>';
+    lhtml += '<span class="sub-nav-badge">$' + formatNum(cats[cat].total) + '</span>';
+    lhtml += '</div>';
+    lhtml += '<div id="' + catId + '">';
+    cats[cat].items.forEach(function(e, i) {
+      if (i > 0) lhtml += '<div class="divider"></div>';
+      var amt = parseCost(e.hkCost);
+      var localAmt = parseCost(e.localCost);
+
+      if (isOwner) {
+        lhtml += '<div class="swipe-container">';
+        lhtml += '<div class="swipe-actions">';
+        lhtml += '<button class="swipe-btn swipe-btn-edit" onclick="openExpEditForm(' + e.row + ')"><span class="material-icons-round">edit</span></button>';
+        lhtml += '<button class="swipe-btn swipe-btn-delete" onclick="confirmDeleteExp(' + e.row + ')"><span class="material-icons-round">delete</span></button>';
+        lhtml += '</div>';
+        lhtml += '<div class="swipe-content">';
+      }
+
+      lhtml += '<div class="exp-row">';
+      lhtml += '<div class="exp-row-info">';
+      lhtml += '<div class="exp-row-item">' + esc(e.item || '-') + '</div>';
+      var metaParts = [esc(displayDate(e.date))];
+      if (e.remark) metaParts.push(esc(e.remark));
+      lhtml += '<div class="exp-row-meta">' + metaParts.join(' \u00B7 ') + '</div>';
+      lhtml += '</div>';
+      lhtml += '<div class="exp-row-amounts">';
+      if (amt) lhtml += '<div class="exp-row-hk">$' + formatNum(amt) + '</div>';
+      if (localAmt) lhtml += '<div class="exp-row-local">' + currency + formatNum(localAmt) + '</div>';
+      lhtml += '</div>';
+      lhtml += '</div>';
+
+      if (isOwner) {
+        lhtml += '</div></div>';
+      }
+    });
+    lhtml += '</div></div>';
+  });
+  document.getElementById('expList').innerHTML = lhtml;
+
+  if (isOwner) {
+    var container = document.getElementById('expList');
+    if (container) initSwipeRows(container);
+  }
+}
+
+// ===== Expense Form =====
+function _buildExpFormHtml(data) {
+  var catOptions = _allCatNames.map(function(cat) {
+    var sel = (data && data.category === cat) ? ' selected' : '';
+    return '<option value="' + escAttr(cat) + '"' + sel + '>' + esc(cat) + '</option>';
+  }).join('');
+
+  var dateVal = '';
+  if (data && data.date) {
+    dateVal = data.date.match(/^\d{4}-/) ? data.date : displayDateToISO(data.date, currentTrip.start);
+  }
+
+  var h = '';
+  h += '<div class="form-row">';
+  h += fld('category', 'expCat', 'select', catOptions);
+  h += fld('event', 'expDate', 'date', dateVal, 'Date');
+  h += '</div>';
+  h += fld('label', 'expItem', '', data ? data.item : '', 'Item*');
+  h += '<div class="form-row">';
+  var hasLocal = data && data.localCost && parseCost(data.localCost);
+  var hasHK = data && data.hkCost && parseCost(data.hkCost);
+  h += fld(currency, 'expLocal', '', hasLocal || '', 'Local', ' inputmode="decimal" oninput="cleanCostInput(this)" onchange="expConvertCost(\'local\')"');
+  h += fld('$', 'expHK', '', hasHK || '', 'HKD', ' inputmode="decimal" oninput="cleanCostInput(this)" onchange="expConvertCost(\'hk\')"');
+  h += '</div>';
+  if (currentTrip.exchangeRate) {
+    h += '<div class="form-rate">' + currency + '1 = $' + parseFloat(currentTrip.exchangeRate) + '</div>';
+  }
+  h += fld('sticky_note_2', 'expRemark', '', data ? data.remark || '' : '', 'Remark');
+  return h;
+}
+
+function expConvertCost(from) {
+  var rate = parseFloat(currentTrip.exchangeRate);
+  if (!rate) return;
+  if (from === 'local') {
+    var other = document.getElementById('expHK');
+    if (other.value.trim()) return; // don't overwrite existing value
+    var local = parseFloat(document.getElementById('expLocal').value);
+    if (!isNaN(local) && local > 0) {
+      other.value = Math.round(local * rate * 100) / 100;
+    }
+  } else {
+    var other = document.getElementById('expLocal');
+    if (other.value.trim()) return;
+    var hk = parseFloat(document.getElementById('expHK').value);
+    if (!isNaN(hk) && hk > 0 && rate > 0) {
+      other.value = Math.round(hk / rate * 100) / 100;
+    }
+  }
+}
+
+function _getExpFormValues() {
+  return {
+    date: document.getElementById('expDate').value,
+    category: document.getElementById('expCat').value,
+    item: document.getElementById('expItem').value,
+    localCost: parseCost(document.getElementById('expLocal').value) || '',
+    hkCost: parseCost(document.getElementById('expHK').value) || '',
+    remark: document.getElementById('expRemark').value
+  };
+}
+
+function openExpForm() {
+  resetAllSwipes();
+  var h = _buildExpFormHtml({ date: defaultFormDate(), item: '', category: 'Food', hkCost: '', localCost: '', remark: '' });
+  h += '<button class="form-btn form-btn-primary" onclick="saveNewExp()">Save</button>';
+  openFormModal('Add Expense', h);
+}
+
+function openExpEditForm(sheetRow) {
+  resetAllSwipes();
+  var e = (appData.expenses || []).find(function(x) { return x.row === sheetRow; });
+  if (!e) return;
+  var h = _buildExpFormHtml(e);
+  h += '<button class="form-btn form-btn-primary" onclick="saveEditExp(' + sheetRow + ')">Save</button>';
+  openFormModal('Edit Expense', h);
+}
+
+function saveNewExp() {
+  var v = _getExpFormValues();
+  if (!v.item.trim()) { warnToast('Item name required'); return; }
+
+  setFormSaving(true);
+  startSync();
+  appData.expenses.push({
+    row: -1, trip: selectedTrip, date: v.date, category: v.category,
+    item: v.item, hkCost: v.hkCost, localCost: v.localCost, remark: v.remark
+  });
+  closeFormModal();
+  renderExpensesTab();
+  crudToast('added', 'Expense');
+
+  google.script.run
+    .withSuccessHandler(function() { endSync(true); })
+    .withFailureHandler(function(err) { endSync(false); failToast(err); refreshData(); })
+    .addExpense(selectedTrip, v.date, v.category, v.item, v.hkCost, v.localCost, v.remark);
+}
+
+function saveEditExp(sheetRow) {
+  var v = _getExpFormValues();
+  if (!v.item.trim()) { warnToast('Item name required'); return; }
+
+  setFormSaving(true);
+  startSync();
+  var e = (appData.expenses || []).find(function(x) { return x.row === sheetRow; });
+  if (e) {
+    e.date = v.date; e.category = v.category; e.item = v.item;
+    e.hkCost = v.hkCost; e.localCost = v.localCost; e.remark = v.remark;
+  }
+  closeFormModal();
+  renderExpensesTab();
+  crudToast('updated', 'Expense');
+
+  google.script.run
+    .withSuccessHandler(function() { endSync(true); })
+    .withFailureHandler(function(err) { endSync(false); failToast(err); refreshData(); })
+    .editExpense(sheetRow, v.date, v.category, v.item, v.hkCost, v.localCost, v.remark);
+}
+
+function confirmDeleteExp(sheetRow) {
+  resetAllSwipes();
+  showConfirm('Delete this expense?', function() {
+    startSync();
+    appData.expenses = appData.expenses.filter(function(x) { return x.row !== sheetRow; });
+    renderExpensesTab();
+    crudToast('deleted', 'Expense');
+
+    google.script.run
+      .withSuccessHandler(function() { endSync(true); })
+      .withFailureHandler(function(err) { endSync(false); failToast(null, 'delete'); refreshData(); })
+      .deleteExpense(sheetRow);
+  });
+}
+
+function scrollToExpCat(idx) {
+  var el = document.getElementById('expCatCard' + idx);
+  if (!el) return;
+  try {
+    var rect = el.getBoundingClientRect();
+    var scrollTop = window.pageYOffset || document.documentElement.scrollTop || 0;
+    var top = rect.top + scrollTop - 64;
+    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+  } catch(e) { el.scrollIntoView(true); }
+}
+</script>
+
+<script>
+// ===== Checklist Tab =====
+function renderChecklistTab() {
+  var settings = (appData && appData.settings) || {};
+  var priv = (settings['app.private'] || '').split(',').filter(Boolean);
+  if (!isOwner && priv.indexOf('checklist') >= 0) {
+    document.getElementById('checkList').innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--text-muted);"><span class="material-icons-round" style="font-size:48px;display:block;margin-bottom:12px;">lock</span>Private Zone</div>';
+    var cb = document.getElementById('checklistBadge'); if (cb) cb.textContent = '0';
+    return;
+  }
+
+  var items = appData.checklist || [];
+  var packed = items.filter(function(c) { return c.checked; }).length;
+
+  var checkBadge = document.getElementById('checklistBadge');
+  if (checkBadge) checkBadge.textContent = packed;
+
+  var groups = {};
+  items.forEach(function(c) {
+    if (!groups[c.category]) groups[c.category] = [];
+    groups[c.category].push(c);
+  });
+
+  var catKeys = Object.keys(groups).sort();
+  var html = '';
+  catKeys.forEach(function(cat) {
+    var catItems = groups[cat];
+    var catChecked = catItems.filter(function(c) { return c.checked; }).length;
+    var catLabel = cat.replace(/^\d+\s*/, '');
+
+    html += '<div class="card">';
+    html += '<div class="group-header">';
+    html += '<span class="group-header-name">' + esc(catLabel) + '</span>';
+    html += '<span class="group-header-meta">' + catChecked + '/' + catItems.length + '</span>';
+    html += '</div>';
+
+    var sorted = catItems.slice().sort(function(a, b) { return (b.checked ? 1 : 0) - (a.checked ? 1 : 0); });
+    sorted.forEach(function(c, i) {
+      if (i > 0) html += '<div class="divider"></div>';
+      var impClass = 'imp' + c.importance;
+      var checkedClass = c.checked ? ' checked' : '';
+      var impHighlight = c.importance === 1 ? ' check-critical' : (c.importance === 2 ? ' check-warn' : '');
+
+      html += '<div class="swipe-container">';
+      html += '<div class="swipe-actions">';
+      html += '<button class="swipe-btn swipe-btn-edit" onclick="openCheckEditForm(' + c.row + ')"><span class="material-icons-round">edit</span></button>';
+      html += '<button class="swipe-btn swipe-btn-delete" onclick="confirmDeleteCheck(' + c.row + ')"><span class="material-icons-round">delete</span></button>';
+      html += '</div>';
+      html += '<div class="swipe-content">';
+
+      html += '<div class="check-row' + checkedClass + impHighlight + '">';
+      html += '<span class="check-box" onclick="toggleCheckItem(' + c.row + ',' + !c.checked + ')">';
+      html += '<span class="material-icons-round">' + (c.checked ? 'check_box' : 'check_box_outline_blank') + '</span>';
+      html += '</span>';
+      html += '<span class="check-item-name">' + esc(c.item) + '</span>';
+      if (c.remarks) html += '<span class="check-remarks">' + esc(c.remarks) + '</span>';
+      if (c.amount && c.amount.toString().trim()) html += '<span class="check-amount">\u00D7' + esc(c.amount) + '</span>';
+      html += '<span class="check-imp ' + impClass + '" onclick="cycleImportance(' + c.row + ',' + c.importance + ')"></span>';
+      html += '</div>';
+
+      html += '</div></div>';
+    });
+    html += '</div>';
+  });
+  document.getElementById('checkList').innerHTML = html;
+  initSwipeRows(document.getElementById('checkList'));
+}
+
+function toggleCheckItem(sheetRow, value) {
+  var item = appData.checklist.find(function(c) { return c.row === sheetRow; });
+  if (item) { item.checked = value; renderChecklistTab(); }
+  startSync();
+  google.script.run
+    .withSuccessHandler(function() { endSync(true); })
+    .withFailureHandler(function(err) {
+      endSync(false);
+      failToast();
+      if (item) { item.checked = !value; renderChecklistTab(); }
+    })
+    .toggleCheck(sheetRow, value);
+}
+
+function cycleImportance(sheetRow, current) {
+  var next = (current % 3) + 1;
+  var item = appData.checklist.find(function(c) { return c.row === sheetRow; });
+  if (item) { item.importance = next; renderChecklistTab(); }
+  startSync();
+  google.script.run
+    .withSuccessHandler(function() { endSync(true); })
+    .withFailureHandler(function(err) {
+      endSync(false);
+      failToast();
+      if (item) { item.importance = current; renderChecklistTab(); }
+    })
+    .setImportance(sheetRow, next);
+}
+
+// ===== Checklist Form =====
+function _getCheckCategories() {
+  var cats = {};
+  (appData.checklist || []).forEach(function(c) { cats[c.category] = true; });
+  return Object.keys(cats).sort();
+}
+
+function _buildCheckFormHtml(data) {
+  var cats = _getCheckCategories();
+  var catOptions = cats.map(function(c) {
+    var label = c.replace(/^\d+\s*/, '');
+    var sel = (data && data.category === c) ? ' selected' : '';
+    return '<option value="' + escAttr(c) + '"' + sel + '>' + esc(label) + '</option>';
+  }).join('');
+
+  var h = '';
+  h += '<div class="form-row">';
+  h += fld('category', 'checkCat', 'select', catOptions);
+  h += '<div style="flex:0.5;">' + fld('tag', 'checkAmt', '', data ? data.amount || '' : '', 'Qty') + '</div>';
+  h += '</div>';
+  h += fld('label', 'checkItem', '', data ? data.item : '', 'Item*');
+  h += fld('sticky_note_2', 'checkRemarks', '', data ? data.remarks || '' : '', 'Remarks');
+  return h;
+}
+
+function openCheckForm() {
+  resetAllSwipes();
+  var h = _buildCheckFormHtml(null);
+  h += '<button class="form-btn form-btn-primary" onclick="saveNewCheck()">Save</button>';
+  openFormModal('Add Item', h);
+}
+
+function openCheckEditForm(sheetRow) {
+  resetAllSwipes();
+  var c = (appData.checklist || []).find(function(x) { return x.row === sheetRow; });
+  if (!c) return;
+  var h = _buildCheckFormHtml(c);
+  h += '<button class="form-btn form-btn-primary" onclick="saveEditCheck(' + sheetRow + ')">Save</button>';
+  openFormModal('Edit Item', h);
+}
+
+function saveNewCheck() {
+  var item = document.getElementById('checkItem').value;
+  if (!item.trim()) { warnToast('Item name is required'); return; }
+  var cat = document.getElementById('checkCat').value;
+  var amt = document.getElementById('checkAmt').value;
+  var remarks = document.getElementById('checkRemarks').value;
+  setFormSaving(true);
+  startSync();
+  appData.checklist.push({ row: -1, category: cat, item: item, checked: false, importance: 3, amount: amt, remarks: remarks });
+  closeFormModal();
+  renderChecklistTab();
+  crudToast('added', 'Item');
+  google.script.run
+    .withSuccessHandler(function() { endSync(true); })
+    .withFailureHandler(function(err) { endSync(false); failToast(err); refreshData(); })
+    .addChecklistItem(cat, item, 3, amt, remarks);
+}
+
+function saveEditCheck(sheetRow) {
+  var item = document.getElementById('checkItem').value;
+  if (!item.trim()) { warnToast('Item name is required'); return; }
+  var cat = document.getElementById('checkCat').value;
+  var amt = document.getElementById('checkAmt').value;
+  var remarks = document.getElementById('checkRemarks').value;
+  var c = (appData.checklist || []).find(function(x) { return x.row === sheetRow; });
+  if (c) { c.category = cat; c.item = item; c.amount = amt; c.remarks = remarks; }
+  setFormSaving(true);
+  startSync();
+  closeFormModal();
+  renderChecklistTab();
+  crudToast('updated', 'Item');
+  google.script.run
+    .withSuccessHandler(function() { endSync(true); })
+    .withFailureHandler(function(err) { endSync(false); failToast(err); refreshData(); })
+    .editChecklistItem(sheetRow, cat, item, c ? c.importance : 3, amt, remarks);
+}
+
+function confirmDeleteCheck(sheetRow) {
+  resetAllSwipes();
+  showConfirm('Delete this item?', function() {
+    startSync();
+    appData.checklist = appData.checklist.filter(function(x) { return x.row !== sheetRow; });
+    renderChecklistTab();
+    crudToast('deleted', 'Item');
+    google.script.run
+      .withSuccessHandler(function() { endSync(true); })
+      .withFailureHandler(function(err) { endSync(false); failToast(null, 'delete'); refreshData(); })
+      .deleteChecklistItem(sheetRow);
+  });
+}
+</script>
+
+<script>
+// ===== Postcard Tab =====
+function renderPostcardTab() {
+  var settings = (appData && appData.settings) || {};
+  var priv = (settings['app.private'] || '').split(',').filter(Boolean);
+  if (!isOwner && priv.indexOf('postcard') >= 0) {
+    document.getElementById('postcardList').innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--text-muted);"><span class="material-icons-round" style="font-size:48px;display:block;margin-bottom:12px;">lock</span>Private Zone</div>';
+    var pb = document.getElementById('postcardBadge'); if (pb) pb.textContent = '0';
+    return;
+  }
+  var items = appData.postcards || [];
+  var sending = items.filter(function(p) { return p.send; });
+  var notSending = items.filter(function(p) { return !p.send; });
+
+  var postcardBadge = document.getElementById('postcardBadge');
+  if (postcardBadge) postcardBadge.textContent = sending.length;
+
+  var html = '';
+
+  function renderPostcardGroup(list, label, isSending) {
+    if (list.length === 0) return;
+    html += '<div class="card">';
+    html += '<div class="group-header' + (isSending ? '' : ' group-header-dim') + '"><span class="group-header-name">' + label + '</span><span class="group-header-meta">' + list.length + '</span></div>';
+    list.forEach(function(p, i) {
+      if (i > 0) html += '<div class="divider"></div>';
+
+      html += '<div class="swipe-container">';
+      html += '<div class="swipe-actions">';
+      html += '<button class="swipe-btn swipe-btn-edit" onclick="openPostcardEditForm(' + p.row + ')"><span class="material-icons-round">edit</span></button>';
+      html += '<button class="swipe-btn swipe-btn-delete" onclick="confirmDeletePostcard(' + p.row + ')"><span class="material-icons-round">delete</span></button>';
+      html += '</div>';
+      html += '<div class="swipe-content">';
+
+      html += '<div class="postcard-row' + (isSending ? ' selected' : '') + '">';
+      html += '<span class="check-box" onclick="togglePostcardItem(' + p.row + ',' + !p.send + ')"><span class="material-icons-round">' + (p.send ? 'check_box' : 'check_box_outline_blank') + '</span></span>';
+      html += '<div class="postcard-info">';
+      html += '<span class="postcard-name">' + esc(p.name) + '</span>';
+      if (isSending && p.address) html += '<span class="postcard-address">' + esc(p.address) + '</span>';
+      html += '</div>';
+      if (isSending && p.address) html += '<span class="postcard-copy" onclick="copyAddress(\'' + escAttr(p.address) + '\')"><span class="material-icons-round">content_copy</span></span>';
+      html += '</div>';
+
+      html += '</div></div>';
+    });
+    html += '</div>';
+  }
+
+  renderPostcardGroup(sending, 'Sending', true);
+  renderPostcardGroup(notSending, 'Not Sending', false);
+
+  document.getElementById('postcardList').innerHTML = html;
+  initSwipeRows(document.getElementById('postcardList'));
+}
+
+function togglePostcardItem(sheetRow, value) {
+  var item = (appData.postcards || []).find(function(p) { return p.row === sheetRow; });
+  if (item) { item.send = value; renderPostcardTab(); }
+  startSync();
+  google.script.run
+    .withSuccessHandler(function() { endSync(true); })
+    .withFailureHandler(function(err) {
+      endSync(false);
+      failToast();
+      if (item) { item.send = !value; renderPostcardTab(); }
+    })
+    .togglePostcard(sheetRow, value);
+}
+
+// ===== Postcard Form =====
+function openPostcardForm() {
+  resetAllSwipes();
+  var h = '';
+  h += fld('person', 'pcName', '', '', 'Name*');
+  h += fld('location_on', 'pcAddr', '', '', 'Address');
+  h += '<button class="form-btn form-btn-primary" onclick="saveNewPostcard()">Save</button>';
+  openFormModal('Add Recipient', h);
+}
+
+function openPostcardEditForm(sheetRow) {
+  resetAllSwipes();
+  var p = (appData.postcards || []).find(function(x) { return x.row === sheetRow; });
+  if (!p) return;
+  var h = '';
+  h += fld('person', 'pcName', '', p.name, 'Name*');
+  h += fld('location_on', 'pcAddr', '', p.address || '', 'Address');
+  h += '<button class="form-btn form-btn-primary" onclick="saveEditPostcard(' + sheetRow + ')">Save</button>';
+  openFormModal('Edit Recipient', h);
+}
+
+function saveNewPostcard() {
+  var name = document.getElementById('pcName').value;
+  if (!name.trim()) { warnToast('Name is required'); return; }
+  var addr = document.getElementById('pcAddr').value;
+  setFormSaving(true);
+  startSync();
+  appData.postcards.push({ row: -1, send: false, name: name, address: addr });
+  closeFormModal();
+  renderPostcardTab();
+  crudToast('added', 'Recipient');
+  google.script.run
+    .withSuccessHandler(function() { endSync(true); })
+    .withFailureHandler(function(err) { endSync(false); failToast(err); refreshData(); })
+    .addPostcardItem(name, addr);
+}
+
+function saveEditPostcard(sheetRow) {
+  var name = document.getElementById('pcName').value;
+  if (!name.trim()) { warnToast('Name is required'); return; }
+  var addr = document.getElementById('pcAddr').value;
+  var p = (appData.postcards || []).find(function(x) { return x.row === sheetRow; });
+  if (p) { p.name = name; p.address = addr; }
+  setFormSaving(true);
+  startSync();
+  closeFormModal();
+  renderPostcardTab();
+  crudToast('updated', 'Recipient');
+  google.script.run
+    .withSuccessHandler(function() { endSync(true); })
+    .withFailureHandler(function(err) { endSync(false); failToast(err); refreshData(); })
+    .editPostcardItem(sheetRow, name, addr);
+}
+
+function confirmDeletePostcard(sheetRow) {
+  resetAllSwipes();
+  showConfirm('Delete this recipient?', function() {
+    startSync();
+    appData.postcards = appData.postcards.filter(function(x) { return x.row !== sheetRow; });
+    renderPostcardTab();
+    crudToast('deleted', 'Recipient');
+    google.script.run
+      .withSuccessHandler(function() { endSync(true); })
+      .withFailureHandler(function(err) { endSync(false); failToast(null, 'delete'); refreshData(); })
+      .deletePostcardItem(sheetRow);
+  });
+}
+</script>
+
+<script>
+// ===== Data Loading =====
+function loadData() {
+  google.script.run
+    .withSuccessHandler(function(data) {
+      try {
+        appData = data;
+        saveToCache(data);
+        renderApp();
+      } catch(e) {
+        document.getElementById('daysContent').innerHTML = '<pre style="color:red;padding:12px;">' + e.message + '\n' + e.stack + '</pre>';
+        document.getElementById('tabItinerary').style.display = '';
+        document.getElementById('skeleton').style.display = 'none';
+      }
+    })
+    .withFailureHandler(function(err) {
+      failToast(err);
+      if (appData) renderApp();
+    })
+    .getAppData();
+}
+
+function refreshData() {
+  var btn = document.getElementById('refreshBtn');
+  btn.classList.add('spinning');
+  google.script.run
+    .withSuccessHandler(function(data) {
+      btn.classList.remove('spinning');
+      appData = data;
+      saveToCache(data);
+      renderApp();
+      showToast('Updated', 'success');
+    })
+    .withFailureHandler(function(err) {
+      btn.classList.remove('spinning');
+      failToast(null, 'update');
+    })
+    .getAppData();
+}
+
+// ===== Cache =====
+function saveToCache(data) {
+  try { localStorage.setItem('traveller_data', JSON.stringify(data)); } catch(e) {}
+}
+function saveActiveTab(tab) {
+  try { localStorage.setItem('traveller_tab', tab); } catch(e) {}
+}
+function loadActiveTab() {
+  try { return localStorage.getItem('traveller_tab') || ''; } catch(e) { return ''; }
+}
+function saveSelectedTrip(trip) {
+  try { localStorage.setItem('traveller_trip', trip); } catch(e) {}
+}
+function loadSelectedTrip() {
+  try { return localStorage.getItem('traveller_trip') || ''; } catch(e) { return ''; }
+}
+function loadFromCache() {
+  try {
+    var c = localStorage.getItem('traveller_data');
+    if (c) { appData = JSON.parse(c); }
+  } catch(e) {}
+}
+
+// ===== Tabs =====
+function switchTab(tab, fromHash) {
+  activeTab = tab;
+  saveActiveTab(tab);
+  document.querySelectorAll('.tab-content').forEach(function(el) { el.style.display = 'none'; });
+  document.querySelectorAll('.bottom-tab').forEach(function(el) { el.classList.remove('active'); });
+
+  // Check if tab is private for non-owners
+  var settings = (appData && appData.settings) || {};
+  var privateTabs = (settings['app.private'] || '').split(',').filter(Boolean);
+  var isTabPrivate = !isOwner && privateTabs.indexOf(tab) >= 0;
+
+  var tabEl = document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1));
+  if (tabEl) {
+    tabEl.style.display = '';
+    // Show lock screen for private tabs (non-owner)
+    var lockId = tab + 'Lock';
+    var lockEl = document.getElementById(lockId);
+    if (isTabPrivate && !lockEl) {
+      // Create inline lock screen
+      tabEl.innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--text-muted);">' +
+        '<span class="material-icons-round" style="font-size:48px;">lock</span>' +
+        '<div style="margin-top:12px;font-size:15px;font-weight:500;">Private Zone</div></div>';
+    }
+  }
+
+  var btns = document.querySelectorAll('.bottom-tab');
+  var tabIdx = { overview: 0, trip: 1, itinerary: 2, map: 3, expenses: 4 };
+  if (btns[tabIdx[tab]]) btns[tabIdx[tab]].classList.add('active');
+
+  // Map tab: remove padding from main
+  var mainEl = document.querySelector('.main');
+  if (mainEl) { if (tab === 'map') mainEl.classList.add('map-active'); else mainEl.classList.remove('map-active'); }
+
+  // Day nav only in itinerary tab, overview nav only in overview tab
+  document.getElementById('dayNav').style.display = (tab === 'itinerary' && currentPlans.length > 0) ? '' : 'none';
+  document.getElementById('overviewNav').style.display = (tab === 'overview') ? '' : 'none';
+  // Restore overview sub-section
+  if (tab === 'overview' && typeof switchOverviewSection === 'function') {
+    var cachedOvSection = '';
+    try { cachedOvSection = localStorage.getItem('traveller_ov_section') || ''; } catch(e) {}
+    switchOverviewSection(cachedOvSection || _overviewSection || 'dashboard', true);
+  }
+
+  // Header add button — show on tabs that support adding (owner only)
+  var addBtn = document.getElementById('headerAddBtn');
+  var showAdd = isOwner && (tab === 'trip' || tab === 'itinerary' || tab === 'expenses' || (tab === 'overview' && (_overviewSection === 'checklist' || _overviewSection === 'postcard')));
+  if (addBtn) addBtn.style.display = showAdd ? '' : 'none';
+
+
+  // Update URL hash for back button / refresh
+  if (!fromHash && location.hash !== '#' + tab) {
+    history.pushState(null, '', '#' + tab);
+  }
+
+  scrollToTop();
+
+  // Auto-scroll to today when switching to itinerary
+  if (tab === 'itinerary' && typeof _itinTodayIdx !== 'undefined' && _itinTodayIdx >= 0) {
+    setTimeout(function() { scrollToDay(_itinTodayIdx); }, 300);
+  }
+}
+
+// ===== Render =====
+function renderApp() {
+  if (!appData || !appData.trips || appData.trips.length === 0) return;
+
+  document.getElementById('skeleton').style.display = 'none';
+
+  // Find selected trip — from cache, then ongoing trip, then most recent
+  if (!selectedTrip) {
+    var cached = loadSelectedTrip();
+    if (cached && appData.trips.some(function(t) { return t.trip === cached; })) {
+      selectedTrip = cached;
+    } else {
+      // Prefer ongoing trip (today within start-end)
+      var today = new Date().toISOString().slice(0, 10);
+      var ongoing = appData.trips.find(function(t) {
+        return t.start && t.end && today >= t.start && today <= t.end;
+      });
+      if (ongoing) {
+        selectedTrip = ongoing.trip;
+      } else {
+        var sorted = appData.trips.slice().sort(function(a, b) {
+          return (b.start || '').localeCompare(a.start || '');
+        });
+        selectedTrip = sorted[0].trip;
+      }
+    }
+  }
+  currentTrip = appData.trips.find(function(t) { return t.trip === selectedTrip; });
+  if (!currentTrip) { currentTrip = appData.trips[0]; selectedTrip = currentTrip.trip; }
+
+  currency = (currentTrip.currency || '').slice(-1);
+  currentPlans = appData.plans.filter(function(p) { return p.trip === selectedTrip; });
+
+  // Update header trip name
+  document.getElementById('headerTripName').textContent = currentTrip.trip;
+
+  // Owner access control
+  isOwner = appData.isOwner;
+  document.body.classList.toggle('read-only', !isOwner);
+
+  renderTripTab();
+  renderItineraryTab();
+  renderExpensesTab();
+  renderChecklistTab();
+  renderPostcardTab();
+  renderOverviewTab();
+  renderMapTab();
+  renderSettingsTab();
+
+  // Map old hashes
+  if (activeTab === 'checklist' || activeTab === 'extras') activeTab = 'overview';
+
+  // Restore tab: hash > cache > home setting > default
+  var settings = appData.settings || {};
+  if (!activeTab) {
+    var cachedTab = loadActiveTab();
+    if (cachedTab && cachedTab !== 'settings') {
+      activeTab = cachedTab;
+    } else {
+      activeTab = settings['app.home'] || 'overview';
+    }
+  }
+
+  switchTab(activeTab);
+}
+
+// ===== Day Nav =====
+function scrollToDay(idx) {
+  var el = document.getElementById('day' + idx);
+  if (!el) return;
+  try {
+    var rect = el.getBoundingClientRect();
+    var scrollTop = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+    var navH = document.getElementById('dayNav') ? document.getElementById('dayNav').offsetHeight : 0;
+    var headerH = 56;
+    var top = rect.top + scrollTop - headerH - navH - 8;
+    if (document.documentElement.scrollTo) document.documentElement.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    document.body.scrollTop = Math.max(0, top);
+    window.scrollTo(0, Math.max(0, top));
+  } catch(e) { el.scrollIntoView(true); }
+  highlightDayNav(idx);
+}
+
+function highlightDayNav(idx) {
+  document.querySelectorAll('#dayNav .sub-nav-item').forEach(function(btn, i) { btn.classList.toggle('active', i === idx); });
+  var btn = document.getElementById('dayNavBtn' + idx);
+  if (btn) btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+}
+
+var dayObserver = null;
+function setupDayObserver() {
+  if (dayObserver) dayObserver.disconnect();
+  dayObserver = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        var idx = parseInt(entry.target.id.replace('day', ''));
+        highlightDayNav(idx);
+      }
+    });
+  }, { rootMargin: '-100px 0px -60% 0px' });
+  document.querySelectorAll('.day-section').forEach(function(el) { dayObserver.observe(el); });
+}
+
+var renderObserverTimer = null;
+var origRender = renderApp;
+renderApp = function() {
+  origRender();
+  clearTimeout(renderObserverTimer);
+  renderObserverTimer = setTimeout(setupDayObserver, 100);
+};
+
+function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+
+function goHome() {
+  var settings = (appData && appData.settings) || {};
+  var homeTab = settings['app.home'] || 'overview';
+  switchTab(homeTab);
+  scrollToTop();
+}
+
+function onHeaderAdd() {
+  if (activeTab === 'trip') openAddTripForm();
+  else if (activeTab === 'itinerary') openItinForm();
+  else if (activeTab === 'expenses') openExpForm();
+  else if (activeTab === 'overview') {
+    if (_overviewSection === 'checklist') openCheckForm();
+    else if (_overviewSection === 'postcard') openPostcardForm();
+  }
+}
+
+// ===== Boot =====
+loadFromCache();
+document.addEventListener('DOMContentLoaded', function() { loadData(); });
+
+window.addEventListener('hashchange', function() {
+  var hash = (location.hash || '').replace('#', '');
+  if (hash === 'checklist' || hash === 'extras') hash = 'overview';
+  // Handle overview sub-sections
+  if (hash.indexOf('overview-') === 0) {
+    var section = hash.replace('overview-', '');
+    if (activeTab !== 'overview') switchTab('overview', true);
+    if (typeof switchOverviewSection === 'function') switchOverviewSection(section, true);
+    return;
+  }
+  if (hash && hash !== activeTab) switchTab(hash, true);
+});
+
+// Send theme color to PWA shell
+top.postMessage({ themeColor: '#0891B2' }, '*');
+
+// ===== Settings Tab =====
+function renderSettingsTab() {
+  if (!isOwner) {
+    document.getElementById('settingsLock').style.display = '';
+    document.getElementById('settingsLock').innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--text-muted);">' +
+      '<span class="material-icons-round" style="font-size:48px;">lock</span>' +
+      '<div style="margin-top:12px;font-size:15px;font-weight:500;">Private Zone</div></div>';
+    document.getElementById('settingsContent').style.display = 'none';
+    return;
+  }
+  document.getElementById('settingsLock').style.display = 'none';
+  document.getElementById('settingsContent').style.display = '';
+
+  var s = appData.settings || {};
+  var airport = s['app.airport'] || 'HKG';
+  var home = s['app.home'] || 'overview';
+  var priv = (s['app.private'] || '').split(',').filter(Boolean);
+
+  var tabs = [
+    { id: 'overview', label: 'Dashboard', icon: 'insights' },
+    { id: 'checklist', label: 'Checklist', icon: 'checklist' },
+    { id: 'postcard', label: 'Postcard', icon: 'mail' },
+    { id: 'trip', label: 'Trip', icon: 'public' },
+    { id: 'itinerary', label: 'Itinerary', icon: 'event_note' },
+    { id: 'map', label: 'Map', icon: 'map' },
+    { id: 'expenses', label: 'Expenses', icon: 'attach_money' }
+  ];
+
+  var html = '';
+
+  // General section
+  html += '<div class="group-header"><span class="group-header-title">General</span></div>';
+  html += '<div class="settings-section">';
+  html += '<div class="settings-row">';
+  html += '<span class="material-icons-round settings-row-icon">flight_takeoff</span>';
+  html += '<span class="settings-row-label">Home Airport</span>';
+  html += '<input type="text" id="setAirport" class="settings-input" value="' + escAttr(airport) + '" maxlength="4" placeholder="IATA">';
+  html += '</div>';
+  html += '</div>';
+
+  // Tab Settings section
+  html += '<div class="group-header"><span class="group-header-title">Tab Settings</span></div>';
+  html += '<div class="settings-section">';
+  tabs.forEach(function(t) {
+    var isHome = home === t.id;
+    var isPrivate = priv.indexOf(t.id) >= 0;
+    html += '<div class="settings-row">';
+    html += '<span class="material-icons-round settings-row-icon">' + t.icon + '</span>';
+    html += '<span class="settings-row-label">' + esc(t.label) + '</span>';
+    html += '<button class="settings-home-btn' + (isHome ? ' active' : '') + '" onclick="setHomeTab(\'' + t.id + '\')" title="Set as home">';
+    html += '<span class="material-icons-round">home</span></button>';
+    html += '<button class="settings-toggle' + (isPrivate ? ' private' : '') + '" onclick="togglePrivateTab(\'' + t.id + '\')">';
+    html += '<span class="material-icons-round">' + (isPrivate ? 'lock' : 'public') + '</span>';
+    html += '</button>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  // API section
+  var apiKey = s['app.apikey'] || '';
+  if (apiKey) _fullApiKey = apiKey;
+  var deployUrl = 'https://script.google.com/macros/s/AKfycbyLay2B_PaztGkmYYPbhlJi-U3H7c5BUcIhi1yQSCUWjqYSRfzWwh3j6bNNv9h1YphcqQ/exec';
+  html += '<div class="group-header"><span class="group-header-title">API</span></div>';
+  html += '<div class="settings-section">';
+  html += '<div class="settings-row">';
+  html += '<span class="material-icons-round settings-row-icon" style="font-size:16px;">key</span>';
+  html += '<span id="apiKeyDisplay" style="flex:1;font-size:10px;color:var(--text-muted);font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (apiKey || 'Not set') + '</span>';
+  html += '<span class="material-icons-round" style="font-size:14px;color:var(--text-muted);cursor:pointer;padding:4px;" onclick="copyApiKey()" title="Copy">content_copy</span>';
+  html += '<span class="material-icons-round" style="font-size:14px;color:var(--text-muted);cursor:pointer;padding:4px;" onclick="regenApiKey()" title="Regenerate">refresh</span>';
+  html += '</div>';
+  html += '<div class="settings-row">';
+  html += '<span class="material-icons-round settings-row-icon" style="font-size:16px;">link</span>';
+  html += '<span id="apiEndpoint" style="flex:1;font-size:9px;color:var(--text-muted);font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(deployUrl) + '</span>';
+  html += '<span class="material-icons-round" style="font-size:14px;color:var(--text-muted);cursor:pointer;padding:4px;" onclick="copyApiEndpoint()" title="Copy">content_copy</span>';
+  html += '</div>';
+  html += '</div>';
+
+  // Save button
+  html += '<div style="padding:16px 14px;">';
+  html += '<button class="form-btn form-btn-primary" onclick="saveAppSettings()" style="width:100%;">Save</button>';
+  html += '</div>';
+
+  document.getElementById('settingsContent').innerHTML = html;
+}
+
+function setHomeTab(tabId) {
+  document.querySelectorAll('.settings-home-btn').forEach(function(b) { b.classList.remove('active'); });
+  event.currentTarget.classList.add('active');
+}
+
+function togglePrivateTab(tabId) {
+  var btn = event.currentTarget;
+  var isNowPrivate = !btn.classList.contains('private');
+  btn.classList.toggle('private');
+  var icon = btn.querySelector('.material-icons-round');
+  icon.textContent = isNowPrivate ? 'lock' : 'public';
+}
+
+var _fullApiKey = '';
+
+function copyApiKey() {
+  var key = _fullApiKey || (appData.settings && appData.settings['app.apikey']) || '';
+  if (!key) { warnToast('No API key. Click regenerate first.'); return; }
+  _copyText(key, 'API key');
+}
+function copyApiEndpoint() {
+  var el = document.getElementById('apiEndpoint');
+  if (el) _copyText(el.textContent, 'Endpoint');
+}
+function regenApiKey() {
+  startSync();
+  google.script.run
+    .withSuccessHandler(function(r) {
+      endSync();
+      if (r && r.error) { showToast(r.error, 'error'); return; }
+      _fullApiKey = r.apikey;
+      if (appData.settings) appData.settings['app.apikey'] = r.apikey;
+      var display = document.getElementById('apiKeyDisplay');
+      if (display) display.textContent = r.apikey;
+      crudToast('generated', 'API key');
+    })
+    .withFailureHandler(function(e) { endSync(); failToast(null, 'generate key'); })
+    .regenerateApiKey();
+}
+
+function saveAppSettings() {
+  var airport = document.getElementById('setAirport').value.trim().toUpperCase();
+
+  var homeBtn = document.querySelector('.settings-home-btn.active');
+  var homeTab = 'overview';
+  if (homeBtn) {
+    var row = homeBtn.closest('.settings-row');
+    var label = row.querySelector('.settings-row-label').textContent.toLowerCase();
+    var tabs = { dashboard:'overview', checklist:'checklist', postcard:'postcard', trip:'trip', itinerary:'itinerary', map:'map', expenses:'expenses' };
+    homeTab = tabs[label] || 'overview';
+  }
+
+  var privateTabs = [];
+  document.querySelectorAll('.settings-toggle.private').forEach(function(btn) {
+    var row = btn.closest('.settings-row');
+    var label = row.querySelector('.settings-row-label').textContent.toLowerCase();
+    var tabs = { dashboard:'overview', checklist:'checklist', postcard:'postcard', trip:'trip', itinerary:'itinerary', map:'map', expenses:'expenses' };
+    if (tabs[label]) privateTabs.push(tabs[label]);
+  });
+
+  var settings = {
+    'app.airport': airport || 'HKG',
+    'app.home': homeTab,
+    'app.private': privateTabs.join(',') || ''
+  };
+
+  startSync();
+  google.script.run
+    .withSuccessHandler(function(r) {
+      endSync();
+      if (r && r.error) { showToast(r.error, 'error'); return; }
+      appData.settings = settings;
+      crudToast('saved', 'Settings');
+    })
+    .withFailureHandler(function(e) { endSync(); failToast(null, 'save'); })
+    .saveSettings(settings);
+}
+</script>
+
+
+</body>
+</html>
