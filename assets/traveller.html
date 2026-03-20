@@ -831,13 +831,26 @@ var google = { script: { run: null } };
           // Map function name + args to action + params
           var params = mapArgsToParams(prop, args);
 
-          // Use GET for public read actions (avoids CORS issues)
+          // Use GET for public actions (avoids CORS issues)
           // Use POST for write actions
-          var isPublic = (prop === 'getAppData' || prop === 'getSettings');
+          var isPublic = (prop === 'getAppData' || prop === 'getSettings' || prop === 'loginWithPassword');
+
+          // Block writes when offline
+          if (!isPublic && !navigator.onLine) {
+            _failure('Offline — editing unavailable');
+            return;
+          }
+
           var fetchP;
           if (isPublic) {
             var getUrl = GAS_API_URL + '?action=' + prop;
             if (apikey) getUrl += '&apikey=' + encodeURIComponent(apikey);
+            // Pass params as query string for public actions
+            for (var pk in params) {
+              if (params[pk] !== undefined && params[pk] !== '') {
+                getUrl += '&' + encodeURIComponent(pk) + '=' + encodeURIComponent(params[pk]);
+              }
+            }
             fetchP = fetch(getUrl, { redirect: 'follow' });
           } else {
             fetchP = fetch(GAS_API_URL, {
@@ -909,6 +922,7 @@ var google = { script: { run: null } };
       editPostcardItem: ['sheetRow', 'name', 'address'],
       deletePostcardItem: ['sheetRow'],
       regenerateApiKey: [],
+      loginWithPassword: ['password'],
     };
 
     var paramNames = signatures[action];
@@ -989,7 +1003,7 @@ var google = { script: { run: null } };
   <!-- Header -->
   <header class="header">
     <div class="header-left">
-      <button class="icon-btn" onclick="switchTab('settings')">
+      <button class="icon-btn" onclick="onGearClick()">
         <span class="material-icons-round">settings</span>
       </button>
     </div>
@@ -1005,8 +1019,8 @@ var google = { script: { run: null } };
       <button class="icon-btn" id="headerAddBtn" onclick="onHeaderAdd()" style="display:none;">
         <span class="material-icons-round">add</span>
       </button>
-      <button class="icon-btn" id="refreshBtn" onclick="refreshData()">
-        <span class="material-icons-round">refresh</span>
+      <button class="icon-btn" id="refreshBtn" onclick="onRefreshClick()">
+        <span class="material-icons-round" id="refreshIcon">refresh</span>
       </button>
     </div>
   </header>
@@ -3951,6 +3965,7 @@ function loadData() {
       try {
         appData = data;
         saveToCache(data);
+        localStorage.setItem('traveller_sync', new Date().toLocaleString());
         renderApp();
       } catch(e) {
         document.getElementById('daysContent').innerHTML = '<pre style="color:red;padding:12px;">' + e.message + '\n' + e.stack + '</pre>';
@@ -3973,6 +3988,7 @@ function refreshData() {
       btn.classList.remove('spinning');
       appData = data;
       saveToCache(data);
+      localStorage.setItem('traveller_sync', new Date().toLocaleString());
       renderApp();
       showToast('Updated', 'success');
     })
@@ -4296,9 +4312,18 @@ function renderSettingsTab() {
   html += '</div>';
   html += '</div>';
 
-  // Save button
-  html += '<div style="padding:16px 14px;">';
-  html += '<button class="form-btn form-btn-primary" onclick="saveAppSettings()" style="width:100%;">Save</button>';
+  // Security section
+  html += '<div class="group-header"><span class="group-header-title">Security</span></div>';
+  html += '<div class="settings-section">';
+  html += '<div class="settings-row" style="flex-direction:column;gap:8px;">';
+  html += fld('password', 'setPassword', 'password', '', 'New Password (leave blank to keep)');
+  html += '</div>';
+  html += '</div>';
+
+  // Save + Logout buttons
+  html += '<div style="padding:16px 14px;display:flex;gap:8px;">';
+  html += '<button class="form-btn form-btn-primary" onclick="saveAppSettings()" style="flex:1;">Save</button>';
+  html += '<button class="form-btn form-btn-delete" onclick="doLogout()" style="flex:0 0 auto;padding:8px 16px;">Logout</button>';
   html += '</div>';
 
   document.getElementById('settingsContent').innerHTML = html;
@@ -4364,11 +4389,14 @@ function saveAppSettings() {
     if (tabs[label]) privateTabs.push(tabs[label]);
   });
 
+  var newPwd = document.getElementById('setPassword') ? document.getElementById('setPassword').value.trim() : '';
+
   var settings = {
     'app.airport': airport || 'HKG',
     'app.home': homeTab,
     'app.private': privateTabs.join(',') || ''
   };
+  if (newPwd) settings['app.password'] = newPwd;
 
   startSync();
   google.script.run
@@ -4381,6 +4409,77 @@ function saveAppSettings() {
     .withFailureHandler(function(e) { endSync(); failToast(null, 'save'); })
     .saveSettings(settings);
 }
+
+// ===== Gear Icon → Login or Settings =====
+function onGearClick() {
+  if (appData && appData.isOwner) {
+    switchTab('settings');
+  } else {
+    showPasswordLogin();
+  }
+}
+
+function showPasswordLogin() {
+  var html = '<div style="padding:16px;">';
+  html += '<div style="text-align:center;margin-bottom:16px;">';
+  html += '<span class="material-icons-round" style="font-size:48px;color:var(--primary);">lock</span>';
+  html += '<div style="font-size:16px;font-weight:600;margin-top:8px;">Admin Login</div>';
+  html += '</div>';
+  html += fld('password', 'loginPwd', 'password', '', 'Password');
+  html += '<button class="form-btn form-btn-primary" style="width:100%;margin-top:12px;" onclick="doPasswordLogin()">Login</button>';
+  html += '</div>';
+  openFormModal('Login', html, null);
+}
+
+function doPasswordLogin() {
+  var pwd = document.getElementById('loginPwd').value.trim();
+  if (!pwd) { warnToast('Password is required'); return; }
+  setFormSaving(true);
+  google.script.run
+    .withSuccessHandler(function(r) {
+      setFormSaving(false);
+      if (r && r.error) { showToast(r.error, 'error'); return; }
+      if (r && r.apikey) {
+        localStorage.setItem('traveller_apikey', r.apikey);
+        closeFormModal();
+        crudToast('logged in', 'Admin');
+        refreshData();
+      }
+    })
+    .withFailureHandler(function(e) { setFormSaving(false); failToast(e); })
+    .loginWithPassword(pwd);
+}
+
+function doLogout() {
+  localStorage.removeItem('traveller_apikey');
+  showToast('Logged out', 'info');
+  refreshData();
+}
+
+// ===== Online/Offline Detection =====
+function onRefreshClick() {
+  if (navigator.onLine) {
+    refreshData();
+  } else {
+    var syncTime = localStorage.getItem('traveller_sync') || 'unknown';
+    showToast('Offline · Last synced: ' + syncTime, 'info');
+  }
+}
+
+function updateOnlineStatus() {
+  var icon = document.getElementById('refreshIcon');
+  if (!icon) return;
+  icon.textContent = navigator.onLine ? 'refresh' : 'cloud_off';
+}
+
+window.addEventListener('online', function() {
+  updateOnlineStatus();
+  showToast('Back online', 'success');
+});
+window.addEventListener('offline', function() {
+  updateOnlineStatus();
+  showToast('You are offline', 'info');
+});
 </script>
 
 
