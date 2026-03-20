@@ -3959,10 +3959,19 @@ function confirmDeletePostcard(sheetRow) {
 
 <script>
 // ===== Data Loading =====
+function _applyLocalOwner(data) {
+  // If user logged in via password (API key cached), force isOwner true
+  if (!data.isOwner && localStorage.getItem('traveller_apikey')) {
+    data.isOwner = true;
+  }
+  return data;
+}
+
 function loadData() {
   google.script.run
     .withSuccessHandler(function(data) {
       try {
+        _applyLocalOwner(data);
         appData = data;
         saveToCache(data);
         localStorage.setItem('traveller_sync', new Date().toLocaleString());
@@ -3986,6 +3995,7 @@ function refreshData() {
   google.script.run
     .withSuccessHandler(function(data) {
       btn.classList.remove('spinning');
+      _applyLocalOwner(data);
       appData = data;
       saveToCache(data);
       localStorage.setItem('traveller_sync', new Date().toLocaleString());
@@ -4018,7 +4028,7 @@ function loadSelectedTrip() {
 function loadFromCache() {
   try {
     var c = localStorage.getItem('traveller_data');
-    if (c) { appData = JSON.parse(c); }
+    if (c) { appData = JSON.parse(c); _applyLocalOwner(appData); }
   } catch(e) {}
 }
 
@@ -4312,18 +4322,9 @@ function renderSettingsTab() {
   html += '</div>';
   html += '</div>';
 
-  // Security section
-  html += '<div class="group-header"><span class="group-header-title">Security</span></div>';
-  html += '<div class="settings-section">';
-  html += '<div class="settings-row" style="flex-direction:column;gap:8px;">';
-  html += fld('password', 'setPassword', 'password', '', 'New Password (leave blank to keep)');
-  html += '</div>';
-  html += '</div>';
-
-  // Save + Logout buttons
-  html += '<div style="padding:16px 14px;display:flex;gap:8px;">';
-  html += '<button class="form-btn form-btn-primary" onclick="saveAppSettings()" style="flex:1;">Save</button>';
-  html += '<button class="form-btn form-btn-delete" onclick="doLogout()" style="flex:0 0 auto;padding:8px 16px;">Logout</button>';
+  // Save button
+  html += '<div style="padding:16px 14px;">';
+  html += '<button class="form-btn form-btn-primary" onclick="saveAppSettings()" style="width:100%;">Save</button>';
   html += '</div>';
 
   document.getElementById('settingsContent').innerHTML = html;
@@ -4389,14 +4390,11 @@ function saveAppSettings() {
     if (tabs[label]) privateTabs.push(tabs[label]);
   });
 
-  var newPwd = document.getElementById('setPassword') ? document.getElementById('setPassword').value.trim() : '';
-
   var settings = {
     'app.airport': airport || 'HKG',
     'app.home': homeTab,
     'app.private': privateTabs.join(',') || ''
   };
-  if (newPwd) settings['app.password'] = newPwd;
 
   startSync();
   google.script.run
@@ -4415,45 +4413,9 @@ function onGearClick() {
   if (appData && appData.isOwner) {
     switchTab('settings');
   } else {
-    showPasswordLogin();
+    // Non-owner: show lock screen
+    showToast('Private Zone', 'info');
   }
-}
-
-function showPasswordLogin() {
-  var html = '<div style="padding:16px;">';
-  html += '<div style="text-align:center;margin-bottom:16px;">';
-  html += '<span class="material-icons-round" style="font-size:48px;color:var(--primary);">lock</span>';
-  html += '<div style="font-size:16px;font-weight:600;margin-top:8px;">Admin Login</div>';
-  html += '</div>';
-  html += fld('password', 'loginPwd', 'password', '', 'Password');
-  html += '<button class="form-btn form-btn-primary" style="width:100%;margin-top:12px;" onclick="doPasswordLogin()">Login</button>';
-  html += '</div>';
-  openFormModal('Login', html, null);
-}
-
-function doPasswordLogin() {
-  var pwd = document.getElementById('loginPwd').value.trim();
-  if (!pwd) { warnToast('Password is required'); return; }
-  setFormSaving(true);
-  google.script.run
-    .withSuccessHandler(function(r) {
-      setFormSaving(false);
-      if (r && r.error) { showToast(r.error, 'error'); return; }
-      if (r && r.apikey) {
-        localStorage.setItem('traveller_apikey', r.apikey);
-        closeFormModal();
-        crudToast('logged in', 'Admin');
-        refreshData();
-      }
-    })
-    .withFailureHandler(function(e) { setFormSaving(false); failToast(e); })
-    .loginWithPassword(pwd);
-}
-
-function doLogout() {
-  localStorage.removeItem('traveller_apikey');
-  showToast('Logged out', 'info');
-  refreshData();
 }
 
 // ===== Online/Offline Detection =====
