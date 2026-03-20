@@ -4445,5 +4445,101 @@ window.addEventListener('offline', function() {
 </script>
 
 
+
+<script>
+// ===== PWA: Password Login =====
+function showPasswordLogin() {
+  var html = '<div style="padding:16px;">';
+  html += '<div style="text-align:center;margin-bottom:16px;">';
+  html += '<span class="material-icons-round" style="font-size:48px;color:var(--primary);">lock</span>';
+  html += '<div style="font-size:16px;font-weight:600;margin-top:8px;">Admin Login</div>';
+  html += '</div>';
+  html += fld('password', 'loginPwd', 'password', '', 'Password');
+  html += '<button class="form-btn form-btn-primary" style="width:100%;margin-top:12px;" onclick="doPasswordLogin()">Login</button>';
+  html += '</div>';
+  openFormModal('Login', html, null);
+}
+
+function doPasswordLogin() {
+  var pwd = document.getElementById('loginPwd').value.trim();
+  if (!pwd) { warnToast('Password is required'); return; }
+  setFormSaving(true);
+  google.script.run
+    .withSuccessHandler(function(r) {
+      setFormSaving(false);
+      if (r && r.error) { showToast(r.error, 'error'); return; }
+      if (r && r.apikey) {
+        localStorage.setItem('traveller_apikey', r.apikey);
+        closeFormModal();
+        crudToast('logged in', 'Admin');
+        refreshData();
+      }
+    })
+    .withFailureHandler(function(e) { setFormSaving(false); failToast(e); })
+    .loginWithPassword(pwd);
+}
+
+function doLogout() {
+  localStorage.removeItem('traveller_apikey');
+  showToast('Logged out', 'info');
+  refreshData();
+}
+
+// Override onGearClick for PWA: show password login for non-owners
+var _origOnGearClick = typeof onGearClick === 'function' ? onGearClick : function(){};
+onGearClick = function() {
+  if (appData && appData.isOwner) {
+    switchTab('settings');
+  } else {
+    showPasswordLogin();
+  }
+};
+
+// Override renderSettingsTab to add password change + logout (PWA only)
+var _origRenderSettings = typeof renderSettingsTab === 'function' ? renderSettingsTab : null;
+if (_origRenderSettings) {
+  renderSettingsTab = function() {
+    _origRenderSettings();
+    var container = document.getElementById('settingsContent');
+    if (!container) return;
+
+    // Find the save button div and add security + logout before it
+    var saveBtn = container.querySelector('.form-btn-primary');
+    if (saveBtn) {
+      var wrapper = saveBtn.parentElement;
+
+      // Security section
+      var secHtml = '<div class="group-header"><span class="group-header-title">Security</span></div>';
+      secHtml += '<div class="settings-section"><div class="settings-row" style="flex-direction:column;gap:8px;">';
+      secHtml += fld('password', 'setPassword', 'password', '', 'New Password (leave blank to keep)');
+      secHtml += '</div></div>';
+      var secDiv = document.createElement('div');
+      secDiv.innerHTML = secHtml;
+      wrapper.parentElement.insertBefore(secDiv, wrapper);
+
+      // Replace save button div with save + logout
+      wrapper.innerHTML = '<div style="display:flex;gap:8px;">' +
+        '<button class="form-btn form-btn-primary" onclick="saveAppSettingsPWA()" style="flex:1;">Save</button>' +
+        '<button class="form-btn form-btn-delete" onclick="doLogout()" style="flex:0 0 auto;padding:8px 16px;">Logout</button>' +
+        '</div>';
+    }
+  };
+}
+
+// PWA save settings with password support
+function saveAppSettingsPWA() {
+  var newPwd = document.getElementById('setPassword') ? document.getElementById('setPassword').value.trim() : '';
+  // Call original save
+  saveAppSettings();
+  // If password changed, save it separately
+  if (newPwd) {
+    google.script.run
+      .withSuccessHandler(function() { showToast('Password updated', 'success'); })
+      .withFailureHandler(function() {})
+      .saveSettings({ 'app.password': newPwd });
+  }
+}
+</script>
+
 </body>
 </html>
