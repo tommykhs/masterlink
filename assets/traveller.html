@@ -831,19 +831,23 @@ var google = { script: { run: null } };
           // Map function name + args to action + params
           var params = mapArgsToParams(prop, args);
 
-          fetch(GAS_API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify({ apikey: apikey, action: prop, params: params }),
-            redirect: 'follow',
-            mode: 'cors'
-          })
-          .then(function(r) {
-            if (r.ok) return r.json();
-            // If redirected (opaque), try fetching the redirected URL
-            if (r.redirected) return r.json();
-            throw new Error('HTTP ' + r.status);
-          })
+          // Use GET for public read actions (avoids CORS issues)
+          // Use POST for write actions
+          var isPublic = (prop === 'getAppData' || prop === 'getSettings');
+          var fetchP;
+          if (isPublic) {
+            var getUrl = GAS_API_URL + '?action=' + prop;
+            if (apikey) getUrl += '&apikey=' + encodeURIComponent(apikey);
+            fetchP = fetch(getUrl, { redirect: 'follow' });
+          } else {
+            fetchP = fetch(GAS_API_URL, {
+              method: 'POST',
+              body: JSON.stringify({ apikey: apikey, action: prop, params: params }),
+              redirect: 'follow'
+            });
+          }
+          fetchP
+          .then(function(r) { return r.json(); })
           .then(function(data) {
             if (data && data.error) {
               _failure(data.error);
