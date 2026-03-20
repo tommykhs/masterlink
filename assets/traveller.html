@@ -813,15 +813,15 @@ var google = { script: { run: null } };
     var _failure = function(e){ console.error('API error:', e); };
 
     var runner = {
-      withSuccessHandler: function(fn) { _success = fn; return runner; },
-      withFailureHandler: function(fn) { _failure = fn; return runner; }
+      withSuccessHandler: function(fn) { _success = fn; return proxy; },
+      withFailureHandler: function(fn) { _failure = fn; return proxy; }
     };
 
     // Create a proxy that intercepts any method call
-    return new Proxy(runner, {
+    var proxy = new Proxy(runner, {
       get: function(target, prop) {
         if (prop === 'withSuccessHandler' || prop === 'withFailureHandler') {
-          return target[prop];
+          return function() { return target[prop].apply(target, arguments); };
         }
         // Any other property access is a GAS function call
         return function() {
@@ -868,6 +868,7 @@ var google = { script: { run: null } };
         };
       }
     });
+    return proxy;
   }
 
   // Map positional args to named params based on function signature
